@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
-import { CalculatorIcon, ArrowRight, TrendingUp, Clock } from "lucide-react"
+import { CalculatorIcon, ArrowRight, TrendingUp, Clock, Info } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
+import { EXCHANGE_CONFIG, getMarkupForAmount } from "@/lib/exchange-config"
 
 interface ExchangeRateData {
   rate: string
@@ -22,7 +23,8 @@ export function Calculator() {
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [lastUpdated, setLastUpdated] = useState<string>("")
   const [isManual, setIsManual] = useState<boolean>(false)
-  const [baseRate, setBaseRate] = useState<string>("")
+  const [baseRate, setBaseRate] = useState<number>(12.5)
+  const [manualRate, setManualRate] = useState<number | null>(null)
 
   // Refs для очистки
   const mountedRef = useRef(true)
@@ -51,10 +53,13 @@ export function Calculator() {
 
         if (response.ok) {
           const rate = Number.parseFloat(data.rate)
+          const parsedBaseRate = Number.parseFloat(data.baseRate || data.rate)
+
           setExchangeRate(rate)
           setLastUpdated(data.timestamp)
           setIsManual(data.isManual)
-          setBaseRate(data.baseRate)
+          setBaseRate(!isNaN(parsedBaseRate) ? parsedBaseRate : rate)
+          setManualRate(data.isManual && !isNaN(rate) ? rate : null)
         }
       } catch (error) {
         console.error("Ошибка при загрузке курса:", error)
@@ -70,29 +75,58 @@ export function Calculator() {
   }, [])
 
   // Автоматический расчет при загрузке курса
-  useEffect(() => {
-    if (exchangeRate && amount) {
-      const amountNum = Number.parseFloat(amount)
-      if (!isNaN(amountNum) && amountNum > 0) {
-        const calculatedResult = amountNum / exchangeRate
-        setResult(calculatedResult)
-      }
+  const getRateForAmount = (amountNum: number) => {
+    if (isManual && manualRate) {
+      return manualRate
     }
-  }, [exchangeRate]) // Запускается когда курс загружен
 
-  const calculateExchange = () => {
-    if (!amount || amount === "") {
+    if (!baseRate || isNaN(baseRate)) {
+      return exchangeRate
+    }
+
+    const approximateYuan = amountNum / baseRate
+    const markup = getMarkupForAmount(approximateYuan)
+    return baseRate + markup
+  }
+
+  const recalculate = (amountValue: string) => {
+    if (!amountValue || amountValue === "") {
       setResult(null)
       return
     }
 
-    const amountNum = Number.parseFloat(amount)
+    const amountNum = Number.parseFloat(amountValue)
     if (!isNaN(amountNum) && amountNum > 0) {
-      const calculatedResult = amountNum / exchangeRate
-      setResult(calculatedResult)
+      const finalRate = getRateForAmount(amountNum)
+      setExchangeRate(finalRate)
+      setResult(amountNum / finalRate)
     } else {
       setResult(null)
     }
+  }
+
+  const getRatesForAllTiers = () => {
+    return EXCHANGE_CONFIG.DYNAMIC_MARKUP.map((tier, index) => {
+      const previousMax = index === 0 ? 0 : EXCHANGE_CONFIG.DYNAMIC_MARKUP[index - 1].maxYuan
+      const isLastTier = !Number.isFinite(tier.maxYuan)
+      const range = isLastTier
+        ? `От ${previousMax} CNY`
+        : index === 0
+          ? `До ${tier.maxYuan} CNY`
+          : `${previousMax}–${tier.maxYuan - 1} CNY`
+
+      return { range, rate: (baseRate + tier.markup).toFixed(2) }
+    })
+  }
+
+  useEffect(() => {
+    if (amount) {
+      recalculate(amount)
+    }
+  }, [baseRate, manualRate, isManual])
+
+  const calculateExchange = () => {
+    recalculate(amount)
   }
 
   const handleAmountChange = (value: string) => {
@@ -120,13 +154,7 @@ export function Calculator() {
           return
         }
 
-        const amountNum = Number.parseFloat(sanitizedValue)
-        if (!isNaN(amountNum) && amountNum > 0) {
-          const calculatedResult = amountNum / exchangeRate
-          setResult(calculatedResult)
-        } else {
-          setResult(null)
-        }
+        recalculate(sanitizedValue)
       }
     }, 300)
   }
@@ -166,7 +194,9 @@ export function Calculator() {
             </div>
           </div>
 
-          {!isManual && baseRate && <div className="text-xs text-gray-500 mb-1">Базовый курс ЦБ: {baseRate} RUB</div>}
+          {!isManual && baseRate && (
+            <div className="text-xs text-gray-500 mb-1">Базовый курс ЦБ: {baseRate.toFixed(2)} RUB</div>
+          )}
 
           <div className="flex items-center gap-1 text-xs text-gray-500">
             <Clock className="h-3 w-3" />
@@ -176,6 +206,22 @@ export function Calculator() {
             </span>
           </div>
         </div>
+
+        {!isManual && (
+          <div className="rounded-lg border border-orange-200 bg-white/80 p-3">
+            <div className="flex items-start gap-2">
+              <Info className="h-4 w-4 text-orange-500 mt-0.5 shrink-0" />
+              <div className="text-xs text-gray-600 space-y-1">
+                <div className="font-semibold text-gray-700 mb-1">Курсы обмена:</div>
+                {getRatesForAllTiers().map((tier) => (
+                  <div key={tier.range}>
+                    <span className="font-medium">{tier.range}:</span> 1 CNY = {tier.rate} RUB
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Поле ввода суммы */}
         <div className="space-y-2">

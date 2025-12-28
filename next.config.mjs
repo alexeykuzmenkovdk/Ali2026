@@ -37,6 +37,7 @@ const nextConfig = {
   
   // Экспериментальные функции для оптимизации
   experimental: {
+    optimizeCss: false,
     optimizePackageImports: ['lucide-react'],
   },
 
