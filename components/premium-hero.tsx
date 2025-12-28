@@ -10,6 +10,7 @@ import { ArrowRight, Shield, Clock, Award, ChevronRight } from "lucide-react"
 import { FloatingElements } from "@/components/ui/floating-elements"
 import { AnimatedText } from "@/components/animated-text-effects"
 import { CriticalImage } from "@/components/optimized-image"
+import { EXCHANGE_CONFIG } from "@/lib/exchange-config"
 
 interface PremiumHeroProps {
   exchangeRate?: number
@@ -574,7 +575,7 @@ function PremiumCard({ exchangeRate }: PremiumCardProps) {
             <div className="text-center">
               <p className="text-xs font-medium text-white/90">ТЕКУЩИЙ КУРС</p>
               <p className="text-base font-bold text-white mt-0.5 bg-gradient-to-r from-white to-white/80 bg-clip-text">
-                1 CNY = {(exchangeRate + 0.65).toFixed(2)} RUB
+                1 CNY = {(exchangeRate + EXCHANGE_CONFIG.DEFAULT_MARKUP).toFixed(2)} RUB
               </p>
               <p className="text-xs text-white/70 mt-0.5">{new Date().toLocaleDateString("ru-RU")}</p>
             </div>
