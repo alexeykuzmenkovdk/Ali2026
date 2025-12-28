@@ -5,7 +5,7 @@ import { motion, useInView } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ArrowRight, RefreshCw, AlertCircle } from "lucide-react"
+import { ArrowRight, RefreshCw, AlertCircle, Info } from "lucide-react"
 import { format, parseISO } from "date-fns"
 import { ru } from "date-fns/locale"
 import { OrderFormModal } from "@/components/order-form-modal"
@@ -289,13 +289,16 @@ export function PremiumCalculator() {
             </div>
 
             <div className="mt-4 rounded-lg bg-white/80 p-3 border border-orange-200">
-              <div className="text-xs text-gray-600 space-y-1">
-                <div className="font-semibold text-gray-700 mb-1">Курсы обмена:</div>
-                {getRatesForAllTiers().map((tier) => (
-                  <div key={tier.range}>
-                    <span className="font-medium">{tier.range}:</span> 1 CNY = {tier.rate} RUB
-                  </div>
-                ))}
+              <div className="flex items-start gap-2">
+                <Info className="h-4 w-4 text-orange-500 mt-0.5 shrink-0" />
+                <div className="text-xs text-gray-600 space-y-1">
+                  <div className="font-semibold text-gray-700 mb-1">Курсы обмена:</div>
+                  {getRatesForAllTiers().map((tier) => (
+                    <div key={tier.range}>
+                      <span className="font-medium">{tier.range}:</span> 1 CNY = {tier.rate} RUB
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

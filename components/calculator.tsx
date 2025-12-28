@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
-import { CalculatorIcon, ArrowRight, TrendingUp, Clock } from "lucide-react"
+import { CalculatorIcon, ArrowRight, TrendingUp, Clock, Info } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { EXCHANGE_CONFIG, getMarkupForAmount } from "@/lib/exchange-config"
 
@@ -209,13 +209,16 @@ export function Calculator() {
 
         {!isManual && (
           <div className="rounded-lg border border-orange-200 bg-white/80 p-3">
-            <div className="text-xs text-gray-600 space-y-1">
-              <div className="font-semibold text-gray-700 mb-1">Курсы обмена:</div>
-              {getRatesForAllTiers().map((tier) => (
-                <div key={tier.range}>
-                  <span className="font-medium">{tier.range}:</span> 1 CNY = {tier.rate} RUB
-                </div>
-              ))}
+            <div className="flex items-start gap-2">
+              <Info className="h-4 w-4 text-orange-500 mt-0.5 shrink-0" />
+              <div className="text-xs text-gray-600 space-y-1">
+                <div className="font-semibold text-gray-700 mb-1">Курсы обмена:</div>
+                {getRatesForAllTiers().map((tier) => (
+                  <div key={tier.range}>
+                    <span className="font-medium">{tier.range}:</span> 1 CNY = {tier.rate} RUB
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
