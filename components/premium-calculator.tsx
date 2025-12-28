@@ -5,7 +5,7 @@ import { motion, useInView } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ArrowRight, RefreshCw, AlertCircle, Info } from "lucide-react"
+import { ArrowRight, RefreshCw, AlertCircle } from "lucide-react"
 import { format, parseISO } from "date-fns"
 import { ru } from "date-fns/locale"
 import { OrderFormModal } from "@/components/order-form-modal"
@@ -227,14 +227,6 @@ export function PremiumCalculator() {
     setIsModalOpen(true)
   }
 
-  const getRatesForAllTiers = () => {
-    return [
-      { range: "до 2000 юаней", rate: (baseCbrRate + 0.8).toFixed(2) },
-      { range: "от 2000 до 6000 юаней", rate: (baseCbrRate + 0.75).toFixed(2) },
-      { range: "от 6000 юаней", rate: (baseCbrRate + 0.65).toFixed(2) },
-    ]
-  }
-
   return (
     <>
       <motion.div
@@ -255,7 +247,7 @@ export function PremiumCalculator() {
                 <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-2">
                   <div className="flex items-center">
                     <span className="font-medium text-gray-700">
-                      Текущий курс: 1 CNY = {(baseCbrRate + 0.65).toFixed(2)} RUB
+                      Текущий курс: 1 CNY = {exchangeRate.toFixed(2)} RUB
                       {isLoading && " (Обновление...)"}
                     </span>
 
@@ -282,19 +274,6 @@ export function PremiumCalculator() {
               </Button>
             </div>
 
-            <div className="mt-4 rounded-lg bg-white/80 p-3 border border-orange-200">
-              <div className="flex items-start gap-2">
-                <Info className="h-4 w-4 text-orange-500 mt-0.5 shrink-0" />
-                <div className="text-xs text-gray-600 space-y-1">
-                  <div className="font-semibold text-gray-700 mb-1">Курсы обмена:</div>
-                  {getRatesForAllTiers().map((tier, index) => (
-                    <div key={index}>
-                      <span className="font-medium">{tier.range}:</span> 1 CNY = {tier.rate} RUB
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
           </div>
 
           <div className="p-6 md:p-8">

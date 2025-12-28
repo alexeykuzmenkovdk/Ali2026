@@ -3,7 +3,7 @@
 
 export const EXCHANGE_CONFIG = {
   // Базовая надбавка к курсу ЦБ РФ (в рублях) - не используется при динамической надбавке
-  DEFAULT_MARKUP: 0.65,
+  DEFAULT_MARKUP: 0.73,
 
   // Режим по умолчанию (false = автоматический, true = ручной)
   DEFAULT_USE_MANUAL_RATE: false,
@@ -18,9 +18,10 @@ export const EXCHANGE_CONFIG = {
   CACHE_DURATION: 30 * 60 * 1000, // 30 минут
 
   DYNAMIC_MARKUP: [
-    { maxYuan: 2000, markup: 0.8 }, // До 2000 юаней: Курс ЦБ + 0.80
-    { maxYuan: 6000, markup: 0.75 }, // От 2000 до 6000 юаней: Курс ЦБ + 0.75
-    { maxYuan: Number.POSITIVE_INFINITY, markup: 0.65 }, // От 6000 юаней и выше: Курс ЦБ + 0.65
+    { maxYuan: 500, markup: 0.96 }, // До 500 юаней: Курс ЦБ + 0.96
+    { maxYuan: 2000, markup: 0.84 }, // До 2000 юаней: Курс ЦБ + 0.84
+    { maxYuan: 6000, markup: 0.8 }, // От 2000 до 6000 юаней: Курс ЦБ + 0.80
+    { maxYuan: Number.POSITIVE_INFINITY, markup: 0.73 }, // От 6000 юаней и выше: Курс ЦБ + 0.73
   ],
 } as const
 
@@ -70,6 +71,7 @@ export function validateSettings(settings: any) {
 // 4. Сохраните файл и обновите страницу
 //
 // ПРИМЕРЫ:
-// { maxYuan: 2000, markup: 0.80 }  // До 2000 юаней: Курс ЦБ + 0.80 руб
-// { maxYuan: 6000, markup: 0.75 }  // От 2000 до 6000: Курс ЦБ + 0.75 руб
-// { maxYuan: Infinity, markup: 0.65 } // Свыше 6000: Курс ЦБ + 0.65 руб
+// { maxYuan: 500, markup: 0.96 }  // До 500 юаней: Курс ЦБ + 0.96 руб
+// { maxYuan: 2000, markup: 0.84 }  // До 2000 юаней: Курс ЦБ + 0.84 руб
+// { maxYuan: 6000, markup: 0.80 }  // От 2000 до 6000: Курс ЦБ + 0.80 руб
+// { maxYuan: Infinity, markup: 0.73 } // Свыше 6000: Курс ЦБ + 0.73 руб
