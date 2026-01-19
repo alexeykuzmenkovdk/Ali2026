@@ -61,6 +61,20 @@ export interface ShowcaseItem {
   isPublished: boolean
 }
 
+export interface BlogPost {
+  id: string
+  title: string
+  slug: string
+  category: string
+  excerpt?: string | null
+  content?: string | null
+  coverImageUrl?: string | null
+  coverVideoUrl?: string | null
+  isPublished: boolean
+  createdAt: string
+  updatedAt: string
+}
+
 export interface SourcingRequest {
   id: string
   userId: number
@@ -154,6 +168,131 @@ export async function listOrderMessages(orderId: string) {
     [orderId],
   )
   return result.rows.map(mapMessage)
+}
+
+export async function listBlogPosts(options?: { category?: string; publishedOnly?: boolean }) {
+  await ensureReady()
+  const pool = getPool()
+  const params: Array<string | boolean> = []
+  const conditions: string[] = []
+
+  if (options?.category) {
+    params.push(options.category)
+    conditions.push(`category = $${params.length}`)
+  }
+  if (options?.publishedOnly) {
+    params.push(true)
+    conditions.push(`is_published = $${params.length}`)
+  }
+
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : ""
+  const result = await pool.query(`SELECT * FROM blog_posts ${whereClause} ORDER BY created_at DESC`, params)
+  return result.rows.map(mapBlogPost)
+}
+
+export async function getBlogPostBySlug(category: string, slug: string, publishedOnly = true) {
+  await ensureReady()
+  const pool = getPool()
+  const params: Array<string | boolean> = [category, slug]
+  let query = "SELECT * FROM blog_posts WHERE category = $1 AND slug = $2"
+  if (publishedOnly) {
+    params.push(true)
+    query += " AND is_published = $3"
+  }
+  const result = await pool.query(query, params)
+  return result.rows[0] ? mapBlogPost(result.rows[0]) : undefined
+}
+
+export async function createBlogPost(data: {
+  title: string
+  slug: string
+  category: string
+  excerpt?: string | null
+  content?: string | null
+  coverImageUrl?: string | null
+  coverVideoUrl?: string | null
+  isPublished?: boolean
+}) {
+  await ensureReady()
+  const pool = getPool()
+  const now = new Date().toISOString()
+  const id = randomUUID()
+  const result = await pool.query(
+    `INSERT INTO blog_posts
+      (id, title, slug, category, excerpt, content, cover_image_url, cover_video_url, is_published, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+     RETURNING *`,
+    [
+      id,
+      data.title,
+      data.slug,
+      data.category,
+      data.excerpt ?? null,
+      data.content ?? null,
+      data.coverImageUrl ?? null,
+      data.coverVideoUrl ?? null,
+      data.isPublished ?? false,
+      now,
+      now,
+    ],
+  )
+  return mapBlogPost(result.rows[0])
+}
+
+export async function updateBlogPost(
+  id: string,
+  data: Partial<{
+    title: string
+    slug: string
+    category: string
+    excerpt?: string | null
+    content?: string | null
+    coverImageUrl?: string | null
+    coverVideoUrl?: string | null
+    isPublished: boolean
+  }>,
+) {
+  await ensureReady()
+  const pool = getPool()
+  const now = new Date().toISOString()
+  const fields: string[] = []
+  const values: Array<string | boolean | null> = []
+
+  const assignField = (field: string, value: string | boolean | null | undefined) => {
+    if (value === undefined) return
+    values.push(value)
+    fields.push(`${field} = $${values.length}`)
+  }
+
+  assignField("title", data.title)
+  assignField("slug", data.slug)
+  assignField("category", data.category)
+  assignField("excerpt", data.excerpt ?? null)
+  assignField("content", data.content ?? null)
+  assignField("cover_image_url", data.coverImageUrl ?? null)
+  assignField("cover_video_url", data.coverVideoUrl ?? null)
+  assignField("is_published", data.isPublished)
+
+  values.push(now)
+  fields.push(`updated_at = $${values.length}`)
+  values.push(id)
+
+  if (fields.length === 0) {
+    const result = await pool.query("SELECT * FROM blog_posts WHERE id = $1", [id])
+    return result.rows[0] ? mapBlogPost(result.rows[0]) : undefined
+  }
+
+  const result = await pool.query(
+    `UPDATE blog_posts SET ${fields.join(", ")} WHERE id = $${values.length} RETURNING *`,
+    values,
+  )
+  return result.rows[0] ? mapBlogPost(result.rows[0]) : undefined
+}
+
+export async function deleteBlogPost(id: string) {
+  await ensureReady()
+  const pool = getPool()
+  await pool.query("DELETE FROM blog_posts WHERE id = $1", [id])
 }
 
 export async function getOrderById(orderId: string) {
@@ -616,6 +755,22 @@ function mapShowcase(row: any): ShowcaseItem {
     priceRub: Number(row.price_rub),
     benefitRub: Number(row.benefit_rub),
     isPublished: row.is_published,
+  }
+}
+
+function mapBlogPost(row: any): BlogPost {
+  return {
+    id: row.id,
+    title: row.title,
+    slug: row.slug,
+    category: row.category,
+    excerpt: row.excerpt,
+    content: row.content,
+    coverImageUrl: row.cover_image_url,
+    coverVideoUrl: row.cover_video_url,
+    isPublished: row.is_published,
+    createdAt: new Date(row.created_at).toISOString(),
+    updatedAt: new Date(row.updated_at).toISOString(),
   }
 }
 

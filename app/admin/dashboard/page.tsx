@@ -16,9 +16,11 @@ import {
   ClipboardList,
   MessageSquareText,
   PackagePlus,
+  BookOpen,
 } from "lucide-react"
 import { Logo } from "@/components/logo-component"
 import { useToast } from "@/components/ui/use-toast"
+import { BLOG_CATEGORIES } from "@/lib/blog"
 
 interface AdminOrder {
   id: string
@@ -56,6 +58,20 @@ interface ShowcaseItem {
   isPublished: boolean
 }
 
+interface BlogPost {
+  id: string
+  title: string
+  slug: string
+  category: string
+  excerpt?: string | null
+  content?: string | null
+  coverImageUrl?: string | null
+  coverVideoUrl?: string | null
+  isPublished: boolean
+  createdAt: string
+  updatedAt: string
+}
+
 export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<string>("orders")
@@ -90,6 +106,29 @@ export default function AdminDashboard() {
   const [editBenefitRub, setEditBenefitRub] = useState<string>("")
   const [editPublished, setEditPublished] = useState<boolean>(false)
   const [isEditImageUploading, setIsEditImageUploading] = useState<boolean>(false)
+
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([])
+  const [blogTitle, setBlogTitle] = useState<string>("")
+  const [blogSlug, setBlogSlug] = useState<string>("")
+  const [blogCategory, setBlogCategory] = useState<string>(BLOG_CATEGORIES[0]?.slug ?? "oplata-v-kitae")
+  const [blogExcerpt, setBlogExcerpt] = useState<string>("")
+  const [blogContent, setBlogContent] = useState<string>("")
+  const [blogCoverImageUrl, setBlogCoverImageUrl] = useState<string>("")
+  const [blogCoverVideoUrl, setBlogCoverVideoUrl] = useState<string>("")
+  const [blogPublished, setBlogPublished] = useState<boolean>(true)
+  const [isBlogLoading, setIsBlogLoading] = useState<boolean>(false)
+  const [isBlogSaving, setIsBlogSaving] = useState<boolean>(false)
+  const [isBlogUpdating, setIsBlogUpdating] = useState<boolean>(false)
+  const [isBlogMediaUploading, setIsBlogMediaUploading] = useState<boolean>(false)
+  const [editingBlogId, setEditingBlogId] = useState<string | null>(null)
+  const [editBlogTitle, setEditBlogTitle] = useState<string>("")
+  const [editBlogSlug, setEditBlogSlug] = useState<string>("")
+  const [editBlogCategory, setEditBlogCategory] = useState<string>(BLOG_CATEGORIES[0]?.slug ?? "oplata-v-kitae")
+  const [editBlogExcerpt, setEditBlogExcerpt] = useState<string>("")
+  const [editBlogContent, setEditBlogContent] = useState<string>("")
+  const [editBlogCoverImageUrl, setEditBlogCoverImageUrl] = useState<string>("")
+  const [editBlogCoverVideoUrl, setEditBlogCoverVideoUrl] = useState<string>("")
+  const [editBlogPublished, setEditBlogPublished] = useState<boolean>(false)
 
   const router = useRouter()
   const { toast } = useToast()
@@ -156,6 +195,15 @@ export default function AdminDashboard() {
     }
     return sessionToken
   }
+
+  const slugify = (value: string) =>
+    value
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9\u0430-\u044f\u0451\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "")
 
 
   const fetchOrders = async () => {
@@ -539,6 +587,265 @@ export default function AdminDashboard() {
     }
   }
 
+  const fetchBlogPosts = async () => {
+    const sessionToken = checkAuthBeforeRequest()
+    if (!sessionToken) return
+
+    setIsBlogLoading(true)
+    try {
+      const response = await fetch(`/api/admin/blog?token=${sessionToken}`)
+      const data = await response.json()
+      if (response.ok && mountedRef.current) {
+        setBlogPosts(data.posts ?? [])
+      }
+    } catch (error) {
+      console.error("Blog fetch error:", error)
+      if (mountedRef.current) {
+        toast({
+          title: "Ошибка",
+          description: "Не удалось загрузить список публикаций",
+          variant: "destructive",
+        })
+      }
+    } finally {
+      if (mountedRef.current) {
+        setIsBlogLoading(false)
+      }
+    }
+  }
+
+  const uploadBlogMedia = async (file: File, onSuccess: (url: string) => void) => {
+    const sessionToken = checkAuthBeforeRequest()
+    if (!sessionToken) return
+
+    setIsBlogMediaUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      const response = await fetch(`/api/admin/blog/uploads?token=${sessionToken}`, {
+        method: "POST",
+        body: formData,
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error ?? "Upload failed")
+      }
+      onSuccess(data.url)
+      toast({ title: "Файл загружен", description: "Медиа сохранено на сервере." })
+    } catch (error) {
+      console.error("Blog upload error:", error)
+      toast({
+        title: "Ошибка",
+        description: "Не удалось загрузить медиа.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsBlogMediaUploading(false)
+    }
+  }
+
+  const createBlogPost = async () => {
+    const sessionToken = checkAuthBeforeRequest()
+    if (!sessionToken) return
+
+    if (!blogTitle || !blogSlug || !blogCategory) {
+      toast({
+        title: "Недостаточно данных",
+        description: "Заполните заголовок, slug и раздел.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsBlogSaving(true)
+    try {
+      const response = await fetch(`/api/admin/blog?token=${sessionToken}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: blogTitle,
+          slug: blogSlug,
+          category: blogCategory,
+          excerpt: blogExcerpt,
+          content: blogContent,
+          coverImageUrl: blogCoverImageUrl,
+          coverVideoUrl: blogCoverVideoUrl,
+          isPublished: blogPublished,
+        }),
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error ?? "Create failed")
+      }
+      if (mountedRef.current) {
+        setBlogPosts((prev) => [data.post, ...prev])
+        setBlogTitle("")
+        setBlogSlug("")
+        setBlogCategory(BLOG_CATEGORIES[0]?.slug ?? "oplata-v-kitae")
+        setBlogExcerpt("")
+        setBlogContent("")
+        setBlogCoverImageUrl("")
+        setBlogCoverVideoUrl("")
+        setBlogPublished(true)
+        toast({ title: "Публикация добавлена", description: "Запись опубликована в блоге." })
+      }
+    } catch (error) {
+      console.error("Blog create error:", error)
+      if (mountedRef.current) {
+        toast({
+          title: "Ошибка",
+          description: "Не удалось создать публикацию",
+          variant: "destructive",
+        })
+      }
+    } finally {
+      if (mountedRef.current) {
+        setIsBlogSaving(false)
+      }
+    }
+  }
+
+  const startEditBlogPost = (post: BlogPost) => {
+    setEditingBlogId(post.id)
+    setEditBlogTitle(post.title)
+    setEditBlogSlug(post.slug)
+    setEditBlogCategory(post.category)
+    setEditBlogExcerpt(post.excerpt ?? "")
+    setEditBlogContent(post.content ?? "")
+    setEditBlogCoverImageUrl(post.coverImageUrl ?? "")
+    setEditBlogCoverVideoUrl(post.coverVideoUrl ?? "")
+    setEditBlogPublished(post.isPublished)
+  }
+
+  const cancelEditBlogPost = () => {
+    setEditingBlogId(null)
+    setEditBlogTitle("")
+    setEditBlogSlug("")
+    setEditBlogCategory(BLOG_CATEGORIES[0]?.slug ?? "oplata-v-kitae")
+    setEditBlogExcerpt("")
+    setEditBlogContent("")
+    setEditBlogCoverImageUrl("")
+    setEditBlogCoverVideoUrl("")
+    setEditBlogPublished(false)
+  }
+
+  const updateBlogPostItem = async () => {
+    const sessionToken = checkAuthBeforeRequest()
+    if (!sessionToken || !editingBlogId) return
+
+    if (!editBlogTitle || !editBlogSlug || !editBlogCategory) {
+      toast({
+        title: "Недостаточно данных",
+        description: "Заполните заголовок, slug и раздел.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsBlogUpdating(true)
+    try {
+      const response = await fetch(`/api/admin/blog/${editingBlogId}?token=${sessionToken}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: editBlogTitle,
+          slug: editBlogSlug,
+          category: editBlogCategory,
+          excerpt: editBlogExcerpt,
+          content: editBlogContent,
+          coverImageUrl: editBlogCoverImageUrl,
+          coverVideoUrl: editBlogCoverVideoUrl,
+          isPublished: editBlogPublished,
+        }),
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error ?? "Update failed")
+      }
+      if (mountedRef.current) {
+        setBlogPosts((prev) => prev.map((entry) => (entry.id === editingBlogId ? data.post : entry)))
+        cancelEditBlogPost()
+        toast({ title: "Публикация обновлена", description: "Изменения сохранены." })
+      }
+    } catch (error) {
+      console.error("Blog update error:", error)
+      if (mountedRef.current) {
+        toast({
+          title: "Ошибка",
+          description: "Не удалось обновить публикацию",
+          variant: "destructive",
+        })
+      }
+    } finally {
+      if (mountedRef.current) {
+        setIsBlogUpdating(false)
+      }
+    }
+  }
+
+  const toggleBlogPublish = async (post: BlogPost) => {
+    const sessionToken = checkAuthBeforeRequest()
+    if (!sessionToken) return
+
+    try {
+      const response = await fetch(`/api/admin/blog/${post.id}?token=${sessionToken}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isPublished: !post.isPublished }),
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error ?? "Update failed")
+      }
+      if (mountedRef.current) {
+        setBlogPosts((prev) => prev.map((entry) => (entry.id === post.id ? data.post : entry)))
+      }
+    } catch (error) {
+      console.error("Blog publish error:", error)
+      if (mountedRef.current) {
+        toast({
+          title: "Ошибка",
+          description: "Не удалось обновить статус публикации",
+          variant: "destructive",
+        })
+      }
+    }
+  }
+
+  const deleteBlogPostItem = async (post: BlogPost) => {
+    const sessionToken = checkAuthBeforeRequest()
+    if (!sessionToken) return
+
+    const confirmed = window.confirm(`Удалить публикацию \"${post.title}\"?`)
+    if (!confirmed) return
+
+    try {
+      const response = await fetch(`/api/admin/blog/${post.id}?token=${sessionToken}`, {
+        method: "DELETE",
+      })
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error ?? "Delete failed")
+      }
+      if (mountedRef.current) {
+        setBlogPosts((prev) => prev.filter((entry) => entry.id !== post.id))
+        if (editingBlogId === post.id) {
+          cancelEditBlogPost()
+        }
+        toast({ title: "Публикация удалена", description: "Запись удалена из блога." })
+      }
+    } catch (error) {
+      console.error("Blog delete error:", error)
+      if (mountedRef.current) {
+        toast({
+          title: "Ошибка",
+          description: "Не удалось удалить публикацию",
+          variant: "destructive",
+        })
+      }
+    }
+  }
+
   useEffect(() => {
     if (activeTab === "orders") {
       fetchOrders()
@@ -547,6 +854,9 @@ export default function AdminDashboard() {
     }
     if (activeTab === "showcase") {
       fetchShowcase()
+    }
+    if (activeTab === "blog") {
+      fetchBlogPosts()
     }
   }, [activeTab])
 
@@ -610,7 +920,7 @@ export default function AdminDashboard() {
 
       <main className="container py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-8">
+          <TabsList className="grid w-full grid-cols-3 mb-8">
             <TabsTrigger value="orders" className="text-base py-3">
               <ClipboardList className="h-4 w-4 mr-2" />
               Заявки
@@ -618,6 +928,10 @@ export default function AdminDashboard() {
             <TabsTrigger value="showcase" className="text-base py-3">
               <PackagePlus className="h-4 w-4 mr-2" />
               Витрина
+            </TabsTrigger>
+            <TabsTrigger value="blog" className="text-base py-3">
+              <BookOpen className="h-4 w-4 mr-2" />
+              Блог
             </TabsTrigger>
           </TabsList>
 
@@ -1007,6 +1321,316 @@ export default function AdminDashboard() {
                   <Button variant="outline" onClick={fetchShowcase} disabled={isShowcaseLoading} className="w-full">
                     <RefreshCw className={`h-4 w-4 mr-2 ${isShowcaseLoading ? "animate-spin" : ""}`} />
                     Обновить витрину
+                  </Button>
+                </CardFooter>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="blog">
+            <div className="grid gap-8 lg:grid-cols-[360px_1fr]">
+              <Card className="border-2 shadow-md">
+                <CardHeader>
+                  <CardTitle>Новая публикация</CardTitle>
+                  <CardDescription>Добавьте пост для нужного раздела блога</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="blog-title">Заголовок</Label>
+                    <Input
+                      id="blog-title"
+                      value={blogTitle}
+                      onChange={(event) => setBlogTitle(event.target.value)}
+                      placeholder="Например: Как платить в Китае"
+                    />
+                  </div>
+                  <div className="flex items-end gap-2">
+                    <div className="flex-1 space-y-2">
+                      <Label htmlFor="blog-slug">Slug</Label>
+                      <Input
+                        id="blog-slug"
+                        value={blogSlug}
+                        onChange={(event) => setBlogSlug(event.target.value)}
+                        placeholder="oplata-v-kitae"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setBlogSlug(slugify(blogTitle))}
+                      disabled={!blogTitle}
+                    >
+                      Авто
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="blog-category">Раздел</Label>
+                    <select
+                      id="blog-category"
+                      value={blogCategory}
+                      onChange={(event) => setBlogCategory(event.target.value)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      {BLOG_CATEGORIES.map((category) => (
+                        <option key={category.slug} value={category.slug}>
+                          {category.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="blog-excerpt">Анонс</Label>
+                    <Textarea
+                      id="blog-excerpt"
+                      value={blogExcerpt}
+                      onChange={(event) => setBlogExcerpt(event.target.value)}
+                      placeholder="Короткое описание статьи"
+                      className="min-h-[90px]"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="blog-content">Текст публикации</Label>
+                    <Textarea
+                      id="blog-content"
+                      value={blogContent}
+                      onChange={(event) => setBlogContent(event.target.value)}
+                      placeholder="Основной текст статьи"
+                      className="min-h-[160px]"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="blog-cover-image">Обложка (фото)</Label>
+                    <Input
+                      id="blog-cover-image"
+                      type="file"
+                      accept="image/*"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0]
+                        if (file) {
+                          uploadBlogMedia(file, setBlogCoverImageUrl)
+                        }
+                      }}
+                      disabled={isBlogMediaUploading}
+                    />
+                    {blogCoverImageUrl && (
+                      <img src={blogCoverImageUrl} alt="Preview" className="h-24 w-24 rounded-md border object-cover" />
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="blog-cover-video">Обложка (видео)</Label>
+                    <Input
+                      id="blog-cover-video"
+                      type="file"
+                      accept="video/*"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0]
+                        if (file) {
+                          uploadBlogMedia(file, setBlogCoverVideoUrl)
+                        }
+                      }}
+                      disabled={isBlogMediaUploading}
+                    />
+                    {blogCoverVideoUrl && (
+                      <video src={blogCoverVideoUrl} className="h-24 w-36 rounded-md border object-cover" controls />
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg border p-3">
+                    <div>
+                      <div className="text-sm font-medium">Публиковать сразу</div>
+                      <div className="text-xs text-gray-500">Можно скрыть, пока текст не готов.</div>
+                    </div>
+                    <Switch checked={blogPublished} onCheckedChange={setBlogPublished} />
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button
+                    onClick={createBlogPost}
+                    disabled={isBlogSaving || isBlogMediaUploading}
+                    className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700"
+                  >
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    {isBlogSaving ? "Сохранение..." : isBlogMediaUploading ? "Загрузка медиа..." : "Добавить публикацию"}
+                  </Button>
+                </CardFooter>
+              </Card>
+
+              <Card className="border-2 shadow-md">
+                <CardHeader>
+                  <CardTitle>Управление публикациями</CardTitle>
+                  <CardDescription>Редактируйте и скрывайте статьи</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {isBlogLoading ? (
+                    <div className="text-sm text-gray-500">Загрузка публикаций...</div>
+                  ) : blogPosts.length === 0 ? (
+                    <div className="text-sm text-gray-500">Публикаций пока нет.</div>
+                  ) : (
+                    <div className="space-y-4">
+                      {blogPosts.map((post) => (
+                        <div key={post.id} className="rounded-lg border p-4">
+                          <div className="flex flex-col gap-4">
+                            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                              <div>
+                                <div className="text-sm font-semibold text-gray-900">{post.title}</div>
+                                <div className="text-xs text-gray-500">
+                                  {post.category} · {new Date(post.createdAt).toLocaleDateString("ru-RU")}
+                                </div>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                <Button
+                                  variant={post.isPublished ? "outline" : "default"}
+                                  onClick={() => toggleBlogPublish(post)}
+                                  size="sm"
+                                >
+                                  {post.isPublished ? "Скрыть" : "Опубликовать"}
+                                </Button>
+                                <Button variant="outline" size="sm" onClick={() => startEditBlogPost(post)}>
+                                  Редактировать
+                                </Button>
+                                <Button variant="outline" size="sm" onClick={() => deleteBlogPostItem(post)}>
+                                  Удалить
+                                </Button>
+                              </div>
+                            </div>
+                            {post.excerpt && <p className="text-xs text-gray-500">{post.excerpt}</p>}
+                            {editingBlogId === post.id && (
+                              <div className="rounded-lg border bg-gray-50 p-4 space-y-4">
+                                <div className="space-y-2">
+                                  <Label htmlFor={`edit-blog-title-${post.id}`}>Заголовок</Label>
+                                  <Input
+                                    id={`edit-blog-title-${post.id}`}
+                                    value={editBlogTitle}
+                                    onChange={(event) => setEditBlogTitle(event.target.value)}
+                                  />
+                                </div>
+                                <div className="flex items-end gap-2">
+                                  <div className="flex-1 space-y-2">
+                                    <Label htmlFor={`edit-blog-slug-${post.id}`}>Slug</Label>
+                                    <Input
+                                      id={`edit-blog-slug-${post.id}`}
+                                      value={editBlogSlug}
+                                      onChange={(event) => setEditBlogSlug(event.target.value)}
+                                    />
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setEditBlogSlug(slugify(editBlogTitle))}
+                                    disabled={!editBlogTitle}
+                                  >
+                                    Авто
+                                  </Button>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor={`edit-blog-category-${post.id}`}>Раздел</Label>
+                                  <select
+                                    id={`edit-blog-category-${post.id}`}
+                                    value={editBlogCategory}
+                                    onChange={(event) => setEditBlogCategory(event.target.value)}
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                  >
+                                    {BLOG_CATEGORIES.map((category) => (
+                                      <option key={category.slug} value={category.slug}>
+                                        {category.title}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor={`edit-blog-excerpt-${post.id}`}>Анонс</Label>
+                                  <Textarea
+                                    id={`edit-blog-excerpt-${post.id}`}
+                                    value={editBlogExcerpt}
+                                    onChange={(event) => setEditBlogExcerpt(event.target.value)}
+                                    className="min-h-[90px]"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor={`edit-blog-content-${post.id}`}>Текст</Label>
+                                  <Textarea
+                                    id={`edit-blog-content-${post.id}`}
+                                    value={editBlogContent}
+                                    onChange={(event) => setEditBlogContent(event.target.value)}
+                                    className="min-h-[140px]"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor={`edit-blog-cover-image-${post.id}`}>Обложка (фото)</Label>
+                                  <Input
+                                    id={`edit-blog-cover-image-${post.id}`}
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(event) => {
+                                      const file = event.target.files?.[0]
+                                      if (file) {
+                                        uploadBlogMedia(file, setEditBlogCoverImageUrl)
+                                      }
+                                    }}
+                                    disabled={isBlogMediaUploading}
+                                  />
+                                  {editBlogCoverImageUrl && (
+                                    <img
+                                      src={editBlogCoverImageUrl}
+                                      alt="Preview"
+                                      className="h-24 w-24 rounded-md border object-cover"
+                                    />
+                                  )}
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor={`edit-blog-cover-video-${post.id}`}>Обложка (видео)</Label>
+                                  <Input
+                                    id={`edit-blog-cover-video-${post.id}`}
+                                    type="file"
+                                    accept="video/*"
+                                    onChange={(event) => {
+                                      const file = event.target.files?.[0]
+                                      if (file) {
+                                        uploadBlogMedia(file, setEditBlogCoverVideoUrl)
+                                      }
+                                    }}
+                                    disabled={isBlogMediaUploading}
+                                  />
+                                  {editBlogCoverVideoUrl && (
+                                    <video
+                                      src={editBlogCoverVideoUrl}
+                                      className="h-24 w-36 rounded-md border object-cover"
+                                      controls
+                                    />
+                                  )}
+                                </div>
+                                <div className="flex items-center justify-between rounded-lg border bg-white p-3">
+                                  <div>
+                                    <div className="text-sm font-medium">Опубликовано</div>
+                                    <div className="text-xs text-gray-500">Меняйте видимость публикации.</div>
+                                  </div>
+                                  <Switch checked={editBlogPublished} onCheckedChange={setEditBlogPublished} />
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                  <Button
+                                    onClick={updateBlogPostItem}
+                                    disabled={isBlogUpdating || isBlogMediaUploading}
+                                    className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700"
+                                  >
+                                    {isBlogUpdating ? "Сохранение..." : "Сохранить изменения"}
+                                  </Button>
+                                  <Button variant="outline" onClick={cancelEditBlogPost}>
+                                    Отмена
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+                <CardFooter>
+                  <Button variant="outline" onClick={fetchBlogPosts} disabled={isBlogLoading} className="w-full">
+                    <RefreshCw className={`h-4 w-4 mr-2 ${isBlogLoading ? "animate-spin" : ""}`} />
+                    Обновить публикации
                   </Button>
                 </CardFooter>
               </Card>

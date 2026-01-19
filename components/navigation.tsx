@@ -24,6 +24,7 @@ const navigationItems: NavigationItem[] = [
   },
   { label: "Alipay гид", href: "/alipay-how-to-use", isExternal: true, description: "Пошаговая инструкция" },
   { label: "Poizon гид", href: "/how-to-order-poizon", isExternal: true, description: "Гид по покупкам" },
+  { label: "Блог", href: "/blog", description: "Статьи и полезные материалы" },
   { label: "Офис", href: "/#office", description: "Адрес и контакты" },
   { label: "Отзывы", href: "/#testimonials", description: "Отзывы клиентов" },
   { label: "FAQ", href: "/#faq", description: "Часто задаваемые вопросы" },
