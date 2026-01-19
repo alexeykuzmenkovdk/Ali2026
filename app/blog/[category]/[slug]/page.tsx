@@ -32,8 +32,17 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
   }
 }
 
-const renderContentParagraphs = (content?: string | null) => {
+const renderContent = (content?: string | null) => {
   if (!content) return null
+  const hasHtml = /<\/?[a-z][\s\S]*>/i.test(content)
+  if (hasHtml) {
+    return (
+      <div
+        className="space-y-4 text-base leading-7 text-gray-700 [&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:text-gray-900 [&_h3]:text-xl [&_h3]:font-semibold [&_h3]:text-gray-900 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_blockquote]:border-l-4 [&_blockquote]:border-orange-200 [&_blockquote]:pl-4 [&_img]:rounded-xl [&_img]:border [&_img]:border-gray-200 [&_img]:max-h-[520px] [&_img]:object-cover [&_video]:rounded-xl [&_video]:border [&_video]:border-gray-200 [&_video]:max-h-[520px] [&_video]:w-full"
+        dangerouslySetInnerHTML={{ __html: content }}
+      />
+    )
+  }
   return content.split(/\n{2,}/).map((paragraph, index) => {
     const lines = paragraph.split("\n")
     return (
@@ -88,7 +97,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               <video src={post.coverVideoUrl} className="h-96 w-full object-cover" controls />
             ) : null}
             <article className="px-6 py-8">
-              {renderContentParagraphs(post.content) ?? (
+              {renderContent(post.content) ?? (
                 <p className="text-base text-gray-700">Скоро здесь появится подробный текст публикации.</p>
               )}
             </article>

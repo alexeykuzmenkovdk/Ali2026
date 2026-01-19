@@ -21,6 +21,7 @@ import {
 import { Logo } from "@/components/logo-component"
 import { useToast } from "@/components/ui/use-toast"
 import { BLOG_CATEGORIES } from "@/lib/blog"
+import { RichTextEditor } from "@/components/rich-text-editor"
 
 interface AdminOrder {
   id: string
@@ -651,9 +652,9 @@ export default function AdminDashboard() {
     }
   }
 
-  const uploadBlogMedia = async (file: File, onSuccess: (url: string) => void) => {
+  const uploadBlogMedia = async (file: File) => {
     const sessionToken = checkAuthBeforeRequest()
-    if (!sessionToken) return
+    if (!sessionToken) return null
 
     setIsBlogMediaUploading(true)
     try {
@@ -667,8 +668,9 @@ export default function AdminDashboard() {
       if (!response.ok) {
         throw new Error(data.error ?? "Upload failed")
       }
-      onSuccess(data.url)
+      const uploadedUrl = data.url as string
       toast({ title: "Файл загружен", description: "Медиа сохранено на сервере." })
+      return uploadedUrl
     } catch (error) {
       console.error("Blog upload error:", error)
       toast({
@@ -676,6 +678,7 @@ export default function AdminDashboard() {
         description: "Не удалось загрузить медиа.",
         variant: "destructive",
       })
+      return null
     } finally {
       setIsBlogMediaUploading(false)
     }
@@ -1428,12 +1431,13 @@ export default function AdminDashboard() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="blog-content">Текст публикации</Label>
-                    <Textarea
+                    <RichTextEditor
                       id="blog-content"
                       value={blogContent}
-                      onChange={(event) => setBlogContent(event.target.value)}
+                      onChange={setBlogContent}
+                      onUploadMedia={uploadBlogMedia}
                       placeholder="Основной текст статьи"
-                      className="min-h-[160px]"
+                      disabled={isBlogSaving || isBlogMediaUploading}
                     />
                   </div>
                   <div className="space-y-2">
@@ -1442,10 +1446,13 @@ export default function AdminDashboard() {
                       id="blog-cover-image"
                       type="file"
                       accept="image/*"
-                      onChange={(event) => {
+                      onChange={async (event) => {
                         const file = event.target.files?.[0]
                         if (file) {
-                          uploadBlogMedia(file, setBlogCoverImageUrl)
+                          const uploadedUrl = await uploadBlogMedia(file)
+                          if (uploadedUrl) {
+                            setBlogCoverImageUrl(uploadedUrl)
+                          }
                         }
                       }}
                       disabled={isBlogMediaUploading}
@@ -1460,10 +1467,13 @@ export default function AdminDashboard() {
                       id="blog-cover-video"
                       type="file"
                       accept="video/*"
-                      onChange={(event) => {
+                      onChange={async (event) => {
                         const file = event.target.files?.[0]
                         if (file) {
-                          uploadBlogMedia(file, setBlogCoverVideoUrl)
+                          const uploadedUrl = await uploadBlogMedia(file)
+                          if (uploadedUrl) {
+                            setBlogCoverVideoUrl(uploadedUrl)
+                          }
                         }
                       }}
                       disabled={isBlogMediaUploading}
@@ -1586,11 +1596,13 @@ export default function AdminDashboard() {
                                 </div>
                                 <div className="space-y-2">
                                   <Label htmlFor={`edit-blog-content-${post.id}`}>Текст</Label>
-                                  <Textarea
+                                  <RichTextEditor
                                     id={`edit-blog-content-${post.id}`}
                                     value={editBlogContent}
-                                    onChange={(event) => setEditBlogContent(event.target.value)}
-                                    className="min-h-[140px]"
+                                    onChange={setEditBlogContent}
+                                    onUploadMedia={uploadBlogMedia}
+                                    placeholder="Основной текст статьи"
+                                    disabled={isBlogUpdating || isBlogMediaUploading}
                                   />
                                 </div>
                                 <div className="space-y-2">
@@ -1599,10 +1611,13 @@ export default function AdminDashboard() {
                                     id={`edit-blog-cover-image-${post.id}`}
                                     type="file"
                                     accept="image/*"
-                                    onChange={(event) => {
+                                    onChange={async (event) => {
                                       const file = event.target.files?.[0]
                                       if (file) {
-                                        uploadBlogMedia(file, setEditBlogCoverImageUrl)
+                                        const uploadedUrl = await uploadBlogMedia(file)
+                                        if (uploadedUrl) {
+                                          setEditBlogCoverImageUrl(uploadedUrl)
+                                        }
                                       }
                                     }}
                                     disabled={isBlogMediaUploading}
@@ -1621,10 +1636,13 @@ export default function AdminDashboard() {
                                     id={`edit-blog-cover-video-${post.id}`}
                                     type="file"
                                     accept="video/*"
-                                    onChange={(event) => {
+                                    onChange={async (event) => {
                                       const file = event.target.files?.[0]
                                       if (file) {
-                                        uploadBlogMedia(file, setEditBlogCoverVideoUrl)
+                                        const uploadedUrl = await uploadBlogMedia(file)
+                                        if (uploadedUrl) {
+                                          setEditBlogCoverVideoUrl(uploadedUrl)
+                                        }
                                       }
                                     }}
                                     disabled={isBlogMediaUploading}
