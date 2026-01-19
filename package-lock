@@ -10758,7 +10758,6 @@
         "metro-inspector-proxy": "0.73.10",
         "metro-minify-terser": "0.73.10",
         "metro-minify-uglify": "0.73.10",
-        "metro-react-native-babel-preset": "0.73.10",
         "metro-resolver": "0.73.10",
         "metro-runtime": "0.73.10",
         "metro-source-map": "0.73.10",

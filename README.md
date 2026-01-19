@@ -12,7 +12,7 @@ Any changes you make to your deployed app will be automatically pushed to this r
 
 ## Platform scope
 
-This codebase is a web-only Next.js application and does not use React Native or Expo dependencies. If you see React Native/Expo packages in a lockfile, they should be treated as stale and removed to avoid install conflicts.
+This codebase is a web-only Next.js application and does not use React Native or Expo dependencies. If you see React Native/Expo packages in a lockfile, they should be treated as stale and removed to avoid install conflicts. Use the npm `package-lock` as the source of truth for installs; pnpm lockfiles are intentionally omitted.
 
 ## Deployment
 
