@@ -16,11 +16,11 @@ async function sendTelegramMessage(message: string) {
 
   // Токен бота (в реальном приложении должен храниться в переменных окружения)
   // Для тестирования используем заглушку
-  const botToken = process.env.TELEGRAM_BOT_TOKEN || "YOUR_BOT_TOKEN"
+  const botToken = process.env.TELEGRAM_SITE_BOT_TOKEN ?? process.env.TELEGRAM_BOT_TOKEN ?? "YOUR_BOT_TOKEN"
 
   // ID чата (в реальном приложении должен быть получен и сохранен заранее)
   // Для тестирования используем заглушку
-  const chatId = process.env.TELEGRAM_CHAT_ID || "YOUR_CHAT_ID"
+  const chatId = process.env.TELEGRAM_SITE_CHAT_ID ?? process.env.TELEGRAM_CHAT_ID ?? "YOUR_CHAT_ID"
 
   try {
     // Проверяем наличие токена и chat_id

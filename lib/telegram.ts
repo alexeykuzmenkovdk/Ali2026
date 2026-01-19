@@ -46,7 +46,7 @@ export function getTelegramUser(initData: string): TelegramInitData {
 }
 
 export function requireTelegramInitData(initData: string | null) {
-  const botToken = process.env.TELEGRAM_BOT_TOKEN
+  const botToken = process.env.TELEGRAM_MINI_APP_BOT_TOKEN ?? process.env.TELEGRAM_BOT_TOKEN
   if (!initData) {
     if (process.env.NODE_ENV === "production") return null
     return { user: { id: 0, username: "demo" } }
