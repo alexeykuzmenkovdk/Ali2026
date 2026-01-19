@@ -6,29 +6,24 @@ export type BlogCategory = {
 
 export const BLOG_CATEGORIES: BlogCategory[] = [
   {
-    slug: "oplata-v-kitae",
-    title: "Оплата в Китае",
-    description: "Способы оплаты, нюансы переводов и советы по расчетам.",
+    slug: "popolnenie-alipay",
+    title: "Пополнение Alipay",
+    description: "Инструкции, лимиты и советы по безопасному пополнению Alipay.",
   },
   {
-    slug: "shopping-v-kitae",
-    title: "Шопинг в Китае",
-    description: "Гайды по покупкам, подборки сервисов и лайфхаки.",
+    slug: "oplata-i-pokupki-v-kitae",
+    title: "Оплата и покупки в Китае",
+    description: "Практические советы по оплатам, покупкам и сервисам в КНР.",
   },
   {
-    slug: "sravnenie-tsen",
-    title: "Сравнение цен",
-    description: "Сравниваем цены и находим оптимальные решения.",
+    slug: "kitayskie-marketpleysy",
+    title: "Китайские маркетплейсы",
+    description: "Обзоры площадок, подборки продавцов и нюансы заказов.",
   },
   {
-    slug: "instrukcii",
-    title: "Инструкции",
-    description: "Пошаговые инструкции и ответы на популярные вопросы.",
-  },
-  {
-    slug: "rynki-i-platformy",
-    title: "Рынки и платформы",
-    description: "Обзор маркетплейсов, сервисов и торговых площадок.",
+    slug: "problemy-i-blokirovki-alipay",
+    title: "Проблемы и блокировки Alipay",
+    description: "Разбираем частые ошибки, блокировки и способы восстановления.",
   },
 ]
 

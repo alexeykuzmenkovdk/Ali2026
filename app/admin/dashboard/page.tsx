@@ -111,7 +111,7 @@ export default function AdminDashboard() {
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([])
   const [blogTitle, setBlogTitle] = useState<string>("")
   const [blogSlug, setBlogSlug] = useState<string>("")
-  const [blogCategory, setBlogCategory] = useState<string>(BLOG_CATEGORIES[0]?.slug ?? "oplata-v-kitae")
+  const [blogCategory, setBlogCategory] = useState<string>(BLOG_CATEGORIES[0]?.slug ?? "popolnenie-alipay")
   const [blogExcerpt, setBlogExcerpt] = useState<string>("")
   const [blogContent, setBlogContent] = useState<string>("")
   const [blogCoverImageUrl, setBlogCoverImageUrl] = useState<string>("")
@@ -124,7 +124,7 @@ export default function AdminDashboard() {
   const [editingBlogId, setEditingBlogId] = useState<string | null>(null)
   const [editBlogTitle, setEditBlogTitle] = useState<string>("")
   const [editBlogSlug, setEditBlogSlug] = useState<string>("")
-  const [editBlogCategory, setEditBlogCategory] = useState<string>(BLOG_CATEGORIES[0]?.slug ?? "oplata-v-kitae")
+  const [editBlogCategory, setEditBlogCategory] = useState<string>(BLOG_CATEGORIES[0]?.slug ?? "popolnenie-alipay")
   const [editBlogExcerpt, setEditBlogExcerpt] = useState<string>("")
   const [editBlogContent, setEditBlogContent] = useState<string>("")
   const [editBlogCoverImageUrl, setEditBlogCoverImageUrl] = useState<string>("")
@@ -721,7 +721,7 @@ export default function AdminDashboard() {
         setBlogPosts((prev) => [data.post, ...prev])
         setBlogTitle("")
         setBlogSlug("")
-        setBlogCategory(BLOG_CATEGORIES[0]?.slug ?? "oplata-v-kitae")
+        setBlogCategory(BLOG_CATEGORIES[0]?.slug ?? "popolnenie-alipay")
         setBlogExcerpt("")
         setBlogContent("")
         setBlogCoverImageUrl("")
@@ -761,7 +761,7 @@ export default function AdminDashboard() {
     setEditingBlogId(null)
     setEditBlogTitle("")
     setEditBlogSlug("")
-    setEditBlogCategory(BLOG_CATEGORIES[0]?.slug ?? "oplata-v-kitae")
+    setEditBlogCategory(BLOG_CATEGORIES[0]?.slug ?? "popolnenie-alipay")
     setEditBlogExcerpt("")
     setEditBlogContent("")
     setEditBlogCoverImageUrl("")
@@ -1391,7 +1391,7 @@ export default function AdminDashboard() {
                         id="blog-slug"
                         value={blogSlug}
                         onChange={(event) => setBlogSlug(event.target.value)}
-                        placeholder="oplata-v-kitae"
+                        placeholder="popolnenie-alipay"
                       />
                     </div>
                     <Button
