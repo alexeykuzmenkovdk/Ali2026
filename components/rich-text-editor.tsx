@@ -49,6 +49,96 @@ const escapeHtml = (input: string) =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;")
 
+const applyInlineFormatting = (input: string) => {
+  let output = escapeHtml(input)
+  output = output.replace(/`([^`]+)`/g, "<code>$1</code>")
+  output = output.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+  output = output.replace(/__([^_]+)__/g, "<strong>$1</strong>")
+  output = output.replace(/\*([^*]+)\*/g, "<em>$1</em>")
+  output = output.replace(/_([^_]+)_/g, "<em>$1</em>")
+  output = output.replace(/~~([^~]+)~~/g, "<del>$1</del>")
+  return output
+}
+
+const markdownToHtml = (input: string) => {
+  const lines = input.replace(/\r\n/g, "\n").split("\n")
+  const htmlParts: string[] = []
+  let listType: "ul" | "ol" | null = null
+  let paragraphLines: string[] = []
+
+  const flushParagraph = () => {
+    if (paragraphLines.length === 0) return
+    const paragraph = paragraphLines.map((line) => applyInlineFormatting(line)).join("<br />")
+    htmlParts.push(`<p>${paragraph}</p>`)
+    paragraphLines = []
+  }
+
+  const closeList = () => {
+    if (!listType) return
+    htmlParts.push(`</${listType}>`)
+    listType = null
+  }
+
+  lines.forEach((line) => {
+    const trimmed = line.trim()
+    if (!trimmed) {
+      flushParagraph()
+      closeList()
+      return
+    }
+
+    const headingMatch = trimmed.match(/^(#{1,3})\s+(.+)$/)
+    if (headingMatch) {
+      flushParagraph()
+      closeList()
+      const level = headingMatch[1].length
+      const content = applyInlineFormatting(headingMatch[2])
+      htmlParts.push(`<h${level}>${content}</h${level}>`)
+      return
+    }
+
+    const unorderedMatch = trimmed.match(/^[-*]\s+(.+)$/)
+    if (unorderedMatch) {
+      flushParagraph()
+      if (listType !== "ul") {
+        closeList()
+        listType = "ul"
+        htmlParts.push("<ul>")
+      }
+      htmlParts.push(`<li>${applyInlineFormatting(unorderedMatch[1])}</li>`)
+      return
+    }
+
+    const orderedMatch = trimmed.match(/^\d+[.)]\s+(.+)$/)
+    if (orderedMatch) {
+      flushParagraph()
+      if (listType !== "ol") {
+        closeList()
+        listType = "ol"
+        htmlParts.push("<ol>")
+      }
+      htmlParts.push(`<li>${applyInlineFormatting(orderedMatch[1])}</li>`)
+      return
+    }
+
+    closeList()
+    paragraphLines.push(line)
+  })
+
+  flushParagraph()
+  closeList()
+
+  return htmlParts.join("")
+}
+
+const getClipboardHtml = (event: ClipboardEvent<HTMLDivElement>) => {
+  const html = event.clipboardData?.getData("text/html")?.trim()
+  if (!html) return null
+  const parsed = new DOMParser().parseFromString(html, "text/html")
+  const bodyHtml = parsed.body?.innerHTML.trim()
+  return bodyHtml || null
+}
+
 export function RichTextEditor({
   value,
   onChange,
@@ -206,18 +296,19 @@ export function RichTextEditor({
 
   const handlePaste = useCallback(
     (event: ClipboardEvent<HTMLDivElement>) => {
+      const html = getClipboardHtml(event)
+      if (html) {
+        event.preventDefault()
+        insertHtmlAfterSelection(html)
+        return
+      }
+
       const text = event.clipboardData?.getData("text/plain")
       if (!text) return
       event.preventDefault()
       const normalized = text.replace(/\r\n/g, "\n").trim()
-      const paragraphs = normalized.split(/\n{2,}/)
-      const html = paragraphs
-        .map((paragraph) => {
-          const lines = paragraph.split("\n").map(escapeHtml).join("<br />")
-          return `<p>${lines}</p>`
-        })
-        .join("")
-      insertHtmlAfterSelection(html)
+      const markdownHtml = markdownToHtml(normalized)
+      insertHtmlAfterSelection(markdownHtml)
     },
     [insertHtmlAfterSelection],
   )
