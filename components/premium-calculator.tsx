@@ -9,7 +9,7 @@ import { ArrowRight, RefreshCw, AlertCircle } from "lucide-react"
 import { format, parseISO } from "date-fns"
 import { ru } from "date-fns/locale"
 import { OrderFormModal } from "@/components/order-form-modal"
-import { getMarkupForAmount } from "@/lib/exchange-config"
+import { EXCHANGE_CONFIG, getMarkupForAmount } from "@/lib/exchange-config"
 
 interface ExchangeRateResponse {
   success: boolean
@@ -227,6 +227,25 @@ export function PremiumCalculator() {
     setIsModalOpen(true)
   }
 
+  const rateTiers = EXCHANGE_CONFIG.DYNAMIC_MARKUP.reduce<
+    Array<{ label: string; rate: number }>
+  >((acc, tier, index, tiers) => {
+    const previousMax = index === 0 ? 0 : tiers[index - 1].maxYuan
+    const label =
+      tier.maxYuan === Number.POSITIVE_INFINITY
+        ? `от ${previousMax} CNY`
+        : index === 0
+          ? `до ${tier.maxYuan} CNY`
+          : `от ${previousMax} до ${tier.maxYuan} CNY`
+
+    acc.push({
+      label,
+      rate: baseCbrRate + tier.markup,
+    })
+
+    return acc
+  }, [])
+
   return (
     <>
       <motion.div
@@ -253,6 +272,17 @@ export function PremiumCalculator() {
 
                     {cbrDate && <span className="ml-2 text-xs text-gray-500">от {getFormattedDate()}</span>}
                   </div>
+                </div>
+                <div className="mt-3 text-xs text-gray-500">
+                  Итоговый курс зависит от суммы в юанях:
+                  <ul className="mt-1 space-y-1">
+                    {rateTiers.map((tier) => (
+                      <li key={tier.label} className="flex flex-wrap gap-1">
+                        <span className="font-medium text-gray-600">{tier.label}</span>
+                        <span>— 1 CNY = {tier.rate.toFixed(2)} RUB</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
                 {updateError && (
                   <div className="mt-2 flex items-center text-sm text-amber-600">
