@@ -60,6 +60,7 @@ interface ShowcaseItem {
   id: string
   title: string
   imageUrl: string
+  description?: string
   priceCny: number
   priceRub: number
   benefitRub: number
@@ -718,6 +719,8 @@ export default function TelegramMiniAppPage() {
                               <CardDescription className="text-gray-600">Экономия {item.benefitRub.toLocaleString()} ₽</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-3">
+                              <img src={item.imageUrl} alt={item.title} className="h-40 w-full rounded-xl border object-cover" />
+                              {item.description && <p className="text-sm text-gray-600">{item.description}</p>}
                               <div className="flex items-center justify-between text-sm">
                                 <span className="text-gray-500">Цена РФ</span>
                                 <span className="font-semibold text-gray-900">{item.priceRub.toLocaleString()} ₽</span>
