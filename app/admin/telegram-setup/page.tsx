@@ -150,9 +150,9 @@ export default function TelegramSetupPage() {
                     <div className="flex items-center">
                       <span className="mr-2">
                         Скопируйте этот токен и сохраните его в переменной окружения{" "}
-                        <code className="bg-gray-100 px-2 py-1 rounded">TELEGRAM_BOT_TOKEN</code>
+                        <code className="bg-gray-100 px-2 py-1 rounded">TELEGRAM_SITE_BOT_TOKEN</code>
                       </span>
-                      <Button variant="outline" size="sm" onClick={() => copyToClipboard("TELEGRAM_BOT_TOKEN")}>
+                      <Button variant="outline" size="sm" onClick={() => copyToClipboard("TELEGRAM_SITE_BOT_TOKEN")}>
                         <Copy className="h-3 w-3" />
                       </Button>
                     </div>
@@ -194,9 +194,9 @@ export default function TelegramSetupPage() {
                     <div className="flex items-center">
                       <span className="mr-2">
                         Скопируйте этот ID и сохраните его в переменной окружения{" "}
-                        <code className="bg-gray-100 px-2 py-1 rounded">TELEGRAM_CHAT_ID</code>
+                        <code className="bg-gray-100 px-2 py-1 rounded">TELEGRAM_SITE_CHAT_ID</code>
                       </span>
-                      <Button variant="outline" size="sm" onClick={() => copyToClipboard("TELEGRAM_CHAT_ID")}>
+                      <Button variant="outline" size="sm" onClick={() => copyToClipboard("TELEGRAM_SITE_CHAT_ID")}>
                         <Copy className="h-3 w-3" />
                       </Button>
                     </div>
@@ -230,9 +230,9 @@ export default function TelegramSetupPage() {
                     <div className="flex items-center">
                       <span className="mr-2">
                         Сохраните этот ID в переменной окружения{" "}
-                        <code className="bg-gray-100 px-2 py-1 rounded">TELEGRAM_CHAT_ID</code>
+                        <code className="bg-gray-100 px-2 py-1 rounded">TELEGRAM_SITE_CHAT_ID</code>
                       </span>
-                      <Button variant="outline" size="sm" onClick={() => copyToClipboard("TELEGRAM_CHAT_ID")}>
+                      <Button variant="outline" size="sm" onClick={() => copyToClipboard("TELEGRAM_SITE_CHAT_ID")}>
                         <Copy className="h-3 w-3" />
                       </Button>
                     </div>
@@ -250,18 +250,18 @@ export default function TelegramSetupPage() {
                 <p>Добавьте следующие переменные окружения в ваш проект на Vercel:</p>
                 <div className="bg-gray-100 p-4 rounded-md font-mono text-sm">
                   <div className="flex items-center justify-between">
-                    <span>TELEGRAM_BOT_TOKEN=ваш_токен_бота</span>
+                    <span>TELEGRAM_SITE_BOT_TOKEN=ваш_токен_бота</span>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => copyToClipboard("TELEGRAM_BOT_TOKEN=ваш_токен_бота")}
+                      onClick={() => copyToClipboard("TELEGRAM_SITE_BOT_TOKEN=ваш_токен_бота")}
                     >
                       <Copy className="h-3 w-3" />
                     </Button>
                   </div>
                   <div className="flex items-center justify-between mt-2">
-                    <span>TELEGRAM_CHAT_ID=ваш_id_чата</span>
-                    <Button variant="ghost" size="sm" onClick={() => copyToClipboard("TELEGRAM_CHAT_ID=ваш_id_чата")}>
+                    <span>TELEGRAM_SITE_CHAT_ID=ваш_id_чата</span>
+                    <Button variant="ghost" size="sm" onClick={() => copyToClipboard("TELEGRAM_SITE_CHAT_ID=ваш_id_чата")}>
                       <Copy className="h-3 w-3" />
                     </Button>
                   </div>

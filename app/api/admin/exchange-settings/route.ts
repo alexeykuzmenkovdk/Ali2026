@@ -47,8 +47,8 @@ function isAuthenticated(request: Request) {
 // Функция для отправки уведомления в Telegram
 async function sendTelegramNotification(message: string) {
   try {
-    const botToken = process.env.TELEGRAM_BOT_TOKEN
-    const chatId = process.env.TELEGRAM_CHAT_ID
+    const botToken = process.env.TELEGRAM_SITE_BOT_TOKEN ?? process.env.TELEGRAM_BOT_TOKEN
+    const chatId = process.env.TELEGRAM_SITE_CHAT_ID ?? process.env.TELEGRAM_CHAT_ID
 
     if (!botToken || !chatId) {
       console.error("[SERVER] Отсутствуют переменные окружения для Telegram")

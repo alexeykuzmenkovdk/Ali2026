@@ -12,9 +12,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const token = process.env.TELEGRAM_BOT_TOKEN
+  const token = process.env.TELEGRAM_MINI_APP_BOT_TOKEN ?? process.env.TELEGRAM_BOT_TOKEN
   if (!token) {
-    return NextResponse.json({ error: "Missing TELEGRAM_BOT_TOKEN" }, { status: 400 })
+    return NextResponse.json({ error: "Missing TELEGRAM_MINI_APP_BOT_TOKEN" }, { status: 400 })
   }
 
   const webhookUrl = process.env.TELEGRAM_WEBHOOK_URL ?? `${request.headers.get("origin")}/api/telegram/webhook`
