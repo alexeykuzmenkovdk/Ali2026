@@ -64,6 +64,7 @@ export async function ensureSchema() {
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
       image_url TEXT NOT NULL,
+      description TEXT,
       price_cny INTEGER NOT NULL,
       price_rub INTEGER NOT NULL,
       benefit_rub INTEGER NOT NULL,
@@ -101,6 +102,9 @@ export async function ensureSchema() {
 
     ALTER TABLE admin_sessions
       ADD COLUMN IF NOT EXISTS sourcing_request_id TEXT;
+
+    ALTER TABLE showcase_items
+      ADD COLUMN IF NOT EXISTS description TEXT;
   `)
 
   globalPool.alipayFastSchemaReady = true

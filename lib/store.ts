@@ -54,6 +54,7 @@ export interface ShowcaseItem {
   id: string
   title: string
   imageUrl: string
+  description?: string
   priceCny: number
   priceRub: number
   benefitRub: number
@@ -84,6 +85,7 @@ const DEFAULT_SHOWCASE = [
   {
     title: "Dyson Airwrap",
     imageUrl: "/showcase/dyson.png",
+    description: "Стайлер для волос с насадками в комплекте.",
     priceCny: 4200,
     priceRub: 65000,
     benefitRub: 18000,
@@ -91,6 +93,7 @@ const DEFAULT_SHOWCASE = [
   {
     title: "Nike Air Force 1",
     imageUrl: "/showcase/nike.png",
+    description: "Классические кроссовки в нескольких цветах.",
     priceCny: 980,
     priceRub: 15000,
     benefitRub: 4500,
@@ -98,6 +101,7 @@ const DEFAULT_SHOWCASE = [
   {
     title: "iPhone 15 Pro 256",
     imageUrl: "/showcase/iphone.png",
+    description: "Флагманский смартфон в титановом корпусе.",
     priceCny: 8999,
     priceRub: 125000,
     benefitRub: 22000,
@@ -110,9 +114,9 @@ async function seedShowcase() {
   if (existing.rowCount && existing.rowCount > 0) return
   for (const item of DEFAULT_SHOWCASE) {
     await pool.query(
-      `INSERT INTO showcase_items (id, title, image_url, price_cny, price_rub, benefit_rub, is_published)
-       VALUES ($1, $2, $3, $4, $5, $6, TRUE)`,
-      [randomUUID(), item.title, item.imageUrl, item.priceCny, item.priceRub, item.benefitRub],
+      `INSERT INTO showcase_items (id, title, image_url, description, price_cny, price_rub, benefit_rub, is_published)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)`,
+      [randomUUID(), item.title, item.imageUrl, item.description ?? null, item.priceCny, item.priceRub, item.benefitRub],
     )
   }
 }
@@ -275,15 +279,17 @@ export async function listAllShowcaseItems() {
   return result.rows.map(mapShowcase)
 }
 
-export async function addShowcaseItem(item: Omit<ShowcaseItem, "id" | "isPublished"> & { isPublished?: boolean }) {
+export async function addShowcaseItem(
+  item: Omit<ShowcaseItem, "id" | "isPublished"> & { isPublished?: boolean },
+) {
   await ensureReady()
   const pool = getPool()
   const id = randomUUID()
   const published = item.isPublished ?? false
   await pool.query(
-    `INSERT INTO showcase_items (id, title, image_url, price_cny, price_rub, benefit_rub, is_published)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-    [id, item.title, item.imageUrl, item.priceCny, item.priceRub, item.benefitRub, published],
+    `INSERT INTO showcase_items (id, title, image_url, description, price_cny, price_rub, benefit_rub, is_published)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+    [id, item.title, item.imageUrl, item.description ?? null, item.priceCny, item.priceRub, item.benefitRub, published],
   )
   return { ...item, id, isPublished: published }
 }
@@ -294,6 +300,49 @@ export async function setShowcasePublish(id: string, isPublished: boolean) {
   const result = await pool.query(
     "UPDATE showcase_items SET is_published = $2 WHERE id = $1 RETURNING *",
     [id, isPublished],
+  )
+  return result.rows[0] ? mapShowcase(result.rows[0]) : undefined
+}
+
+export async function updateShowcaseItem(
+  id: string,
+  updates: Partial<Omit<ShowcaseItem, "id">>,
+) {
+  await ensureReady()
+  const pool = getPool()
+  const existing = await pool.query("SELECT * FROM showcase_items WHERE id = $1", [id])
+  if (!existing.rows[0]) return undefined
+  const current = mapShowcase(existing.rows[0])
+  const next = {
+    title: updates.title ?? current.title,
+    imageUrl: updates.imageUrl ?? current.imageUrl,
+    description: updates.description ?? current.description ?? null,
+    priceCny: updates.priceCny ?? current.priceCny,
+    priceRub: updates.priceRub ?? current.priceRub,
+    benefitRub: updates.benefitRub ?? current.benefitRub,
+    isPublished: updates.isPublished ?? current.isPublished,
+  }
+  const result = await pool.query(
+    `UPDATE showcase_items
+      SET title = $2,
+          image_url = $3,
+          description = $4,
+          price_cny = $5,
+          price_rub = $6,
+          benefit_rub = $7,
+          is_published = $8
+      WHERE id = $1
+      RETURNING *`,
+    [
+      id,
+      next.title,
+      next.imageUrl,
+      next.description ?? null,
+      next.priceCny,
+      next.priceRub,
+      next.benefitRub,
+      next.isPublished,
+    ],
   )
   return result.rows[0] ? mapShowcase(result.rows[0]) : undefined
 }
@@ -562,6 +611,7 @@ function mapShowcase(row: any): ShowcaseItem {
     id: row.id,
     title: row.title,
     imageUrl: row.image_url,
+    description: row.description ?? undefined,
     priceCny: Number(row.price_cny),
     priceRub: Number(row.price_rub),
     benefitRub: Number(row.benefit_rub),

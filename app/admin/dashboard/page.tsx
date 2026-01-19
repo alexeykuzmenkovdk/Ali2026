@@ -49,6 +49,7 @@ interface ShowcaseItem {
   id: string
   title: string
   imageUrl: string
+  description?: string
   priceCny: number
   priceRub: number
   benefitRub: number
@@ -71,12 +72,24 @@ export default function AdminDashboard() {
   const [showcaseItems, setShowcaseItems] = useState<ShowcaseItem[]>([])
   const [showcaseTitle, setShowcaseTitle] = useState<string>("")
   const [showcaseImageUrl, setShowcaseImageUrl] = useState<string>("")
+  const [showcaseDescription, setShowcaseDescription] = useState<string>("")
   const [showcasePriceCny, setShowcasePriceCny] = useState<string>("")
   const [showcasePriceRub, setShowcasePriceRub] = useState<string>("")
   const [showcaseBenefitRub, setShowcaseBenefitRub] = useState<string>("")
   const [showcasePublished, setShowcasePublished] = useState<boolean>(true)
   const [isShowcaseLoading, setIsShowcaseLoading] = useState<boolean>(false)
   const [isShowcaseSaving, setIsShowcaseSaving] = useState<boolean>(false)
+  const [isImageUploading, setIsImageUploading] = useState<boolean>(false)
+  const [isShowcaseUpdating, setIsShowcaseUpdating] = useState<boolean>(false)
+  const [editingItemId, setEditingItemId] = useState<string | null>(null)
+  const [editTitle, setEditTitle] = useState<string>("")
+  const [editImageUrl, setEditImageUrl] = useState<string>("")
+  const [editDescription, setEditDescription] = useState<string>("")
+  const [editPriceCny, setEditPriceCny] = useState<string>("")
+  const [editPriceRub, setEditPriceRub] = useState<string>("")
+  const [editBenefitRub, setEditBenefitRub] = useState<string>("")
+  const [editPublished, setEditPublished] = useState<boolean>(false)
+  const [isEditImageUploading, setIsEditImageUploading] = useState<boolean>(false)
 
   const router = useRouter()
   const { toast } = useToast()
@@ -313,7 +326,7 @@ export default function AdminDashboard() {
     if (!showcaseTitle || !showcaseImageUrl) {
       toast({
         title: "Недостаточно данных",
-        description: "Заполните название и ссылку на изображение.",
+        description: "Заполните название и загрузите изображение.",
         variant: "destructive",
       })
       return
@@ -327,6 +340,7 @@ export default function AdminDashboard() {
         body: JSON.stringify({
           title: showcaseTitle,
           imageUrl: showcaseImageUrl,
+          description: showcaseDescription,
           priceCny: showcasePriceCny,
           priceRub: showcasePriceRub,
           benefitRub: showcaseBenefitRub,
@@ -338,6 +352,7 @@ export default function AdminDashboard() {
         setShowcaseItems((prev) => [data.item, ...prev])
         setShowcaseTitle("")
         setShowcaseImageUrl("")
+        setShowcaseDescription("")
         setShowcasePriceCny("")
         setShowcasePriceRub("")
         setShowcaseBenefitRub("")
@@ -384,6 +399,142 @@ export default function AdminDashboard() {
           description: "Не удалось обновить статус публикации",
           variant: "destructive",
         })
+      }
+    }
+  }
+
+  const handleShowcaseImageUpload = async (file: File) => {
+    const sessionToken = checkAuthBeforeRequest()
+    if (!sessionToken) return
+
+    setIsImageUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      const response = await fetch(`/api/admin/uploads?token=${sessionToken}`, {
+        method: "POST",
+        body: formData,
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error ?? "Upload failed")
+      }
+      setShowcaseImageUrl(data.url)
+      toast({ title: "Файл загружен", description: "Изображение сохранено на сервере." })
+    } catch (error) {
+      console.error("Showcase upload error:", error)
+      toast({
+        title: "Ошибка",
+        description: "Не удалось загрузить изображение.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsImageUploading(false)
+    }
+  }
+
+  const startEditShowcaseItem = (item: ShowcaseItem) => {
+    setEditingItemId(item.id)
+    setEditTitle(item.title)
+    setEditImageUrl(item.imageUrl)
+    setEditDescription(item.description ?? "")
+    setEditPriceCny(String(item.priceCny))
+    setEditPriceRub(String(item.priceRub))
+    setEditBenefitRub(String(item.benefitRub))
+    setEditPublished(item.isPublished)
+  }
+
+  const cancelEditShowcaseItem = () => {
+    setEditingItemId(null)
+    setEditTitle("")
+    setEditImageUrl("")
+    setEditDescription("")
+    setEditPriceCny("")
+    setEditPriceRub("")
+    setEditBenefitRub("")
+    setEditPublished(false)
+  }
+
+  const handleEditImageUpload = async (file: File) => {
+    const sessionToken = checkAuthBeforeRequest()
+    if (!sessionToken) return
+
+    setIsEditImageUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      const response = await fetch(`/api/admin/uploads?token=${sessionToken}`, {
+        method: "POST",
+        body: formData,
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error ?? "Upload failed")
+      }
+      setEditImageUrl(data.url)
+      toast({ title: "Файл загружен", description: "Новое изображение сохранено." })
+    } catch (error) {
+      console.error("Edit upload error:", error)
+      toast({
+        title: "Ошибка",
+        description: "Не удалось загрузить изображение.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsEditImageUploading(false)
+    }
+  }
+
+  const updateShowcaseItem = async () => {
+    const sessionToken = checkAuthBeforeRequest()
+    if (!sessionToken || !editingItemId) return
+
+    if (!editTitle || !editImageUrl) {
+      toast({
+        title: "Недостаточно данных",
+        description: "Название и изображение обязательны.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsShowcaseUpdating(true)
+    try {
+      const response = await fetch(`/api/admin/showcase?token=${sessionToken}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editingItemId,
+          title: editTitle,
+          imageUrl: editImageUrl,
+          description: editDescription,
+          priceCny: editPriceCny,
+          priceRub: editPriceRub,
+          benefitRub: editBenefitRub,
+          isPublished: editPublished,
+        }),
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error ?? "Update failed")
+      }
+      if (mountedRef.current) {
+        setShowcaseItems((prev) => prev.map((entry) => (entry.id === editingItemId ? data.item : entry)))
+        cancelEditShowcaseItem()
+        toast({ title: "Позиция обновлена", description: "Данные сохранены." })
+      }
+    } catch (error) {
+      console.error("Showcase update error:", error)
+      if (mountedRef.current) {
+        toast({
+          title: "Ошибка",
+          description: "Не удалось обновить позицию.",
+          variant: "destructive",
+        })
+      }
+    } finally {
+      if (mountedRef.current) {
+        setIsShowcaseUpdating(false)
       }
     }
   }
@@ -641,12 +792,33 @@ export default function AdminDashboard() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="showcase-image">Ссылка на изображение</Label>
+                    <Label htmlFor="showcase-image">Изображение товара</Label>
                     <Input
                       id="showcase-image"
-                      value={showcaseImageUrl}
-                      onChange={(event) => setShowcaseImageUrl(event.target.value)}
-                      placeholder="https://..."
+                      type="file"
+                      accept="image/*"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0]
+                        if (file) {
+                          handleShowcaseImageUpload(file)
+                        }
+                      }}
+                      disabled={isImageUploading}
+                    />
+                    {showcaseImageUrl && (
+                      <div className="mt-2">
+                        <img src={showcaseImageUrl} alt="Preview" className="h-24 w-24 rounded-md border object-cover" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="showcase-description">Описание</Label>
+                    <Textarea
+                      id="showcase-description"
+                      value={showcaseDescription}
+                      onChange={(event) => setShowcaseDescription(event.target.value)}
+                      placeholder="Короткое описание товара"
+                      className="min-h-[100px]"
                     />
                   </div>
                   <div className="grid gap-4 md:grid-cols-3">
@@ -689,11 +861,11 @@ export default function AdminDashboard() {
                 <CardFooter>
                   <Button
                     onClick={createShowcaseItem}
-                    disabled={isShowcaseSaving}
+                    disabled={isShowcaseSaving || isImageUploading}
                     className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700"
                   >
                     <PackagePlus className="h-4 w-4 mr-2" />
-                    {isShowcaseSaving ? "Сохранение..." : "Добавить в витрину"}
+                    {isShowcaseSaving ? "Сохранение..." : isImageUploading ? "Загрузка изображения..." : "Добавить в витрину"}
                   </Button>
                 </CardFooter>
               </Card>
@@ -712,20 +884,119 @@ export default function AdminDashboard() {
                     <div className="space-y-3">
                       {showcaseItems.map((item) => (
                         <div key={item.id} className="rounded-lg border p-4">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <div className="text-sm font-semibold">{item.title}</div>
-                              <div className="text-xs text-gray-500">
-                                {item.priceCny} CNY · {item.priceRub} ₽ · выгода {item.benefitRub} ₽
+                          <div className="flex flex-col gap-4">
+                            <div className="flex items-center justify-between gap-4">
+                              <div className="flex items-center gap-3">
+                                <img src={item.imageUrl} alt={item.title} className="h-14 w-14 rounded-md border object-cover" />
+                                <div>
+                                  <div className="text-sm font-semibold">{item.title}</div>
+                                  <div className="text-xs text-gray-500">
+                                    {item.priceCny} CNY · {item.priceRub} ₽ · выгода {item.benefitRub} ₽
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant={item.isPublished ? "outline" : "default"}
+                                  onClick={() => toggleShowcasePublish(item)}
+                                  size="sm"
+                                >
+                                  {item.isPublished ? "Скрыть" : "Опубликовать"}
+                                </Button>
+                                <Button variant="outline" size="sm" onClick={() => startEditShowcaseItem(item)}>
+                                  Редактировать
+                                </Button>
                               </div>
                             </div>
-                            <Button
-                              variant={item.isPublished ? "outline" : "default"}
-                              onClick={() => toggleShowcasePublish(item)}
-                              size="sm"
-                            >
-                              {item.isPublished ? "Скрыть" : "Опубликовать"}
-                            </Button>
+                            {item.description && <p className="text-xs text-gray-500">{item.description}</p>}
+                            {editingItemId === item.id && (
+                              <div className="rounded-lg border bg-gray-50 p-4 space-y-4">
+                                <div className="space-y-2">
+                                  <Label htmlFor={`edit-title-${item.id}`}>Название</Label>
+                                  <Input
+                                    id={`edit-title-${item.id}`}
+                                    value={editTitle}
+                                    onChange={(event) => setEditTitle(event.target.value)}
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor={`edit-image-${item.id}`}>Изображение</Label>
+                                  <Input
+                                    id={`edit-image-${item.id}`}
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(event) => {
+                                      const file = event.target.files?.[0]
+                                      if (file) {
+                                        handleEditImageUpload(file)
+                                      }
+                                    }}
+                                    disabled={isEditImageUploading}
+                                  />
+                                  {editImageUrl && (
+                                    <img
+                                      src={editImageUrl}
+                                      alt="Preview"
+                                      className="h-24 w-24 rounded-md border object-cover"
+                                    />
+                                  )}
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor={`edit-description-${item.id}`}>Описание</Label>
+                                  <Textarea
+                                    id={`edit-description-${item.id}`}
+                                    value={editDescription}
+                                    onChange={(event) => setEditDescription(event.target.value)}
+                                    className="min-h-[90px]"
+                                  />
+                                </div>
+                                <div className="grid gap-4 md:grid-cols-3">
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`edit-price-cny-${item.id}`}>Цена CNY</Label>
+                                    <Input
+                                      id={`edit-price-cny-${item.id}`}
+                                      value={editPriceCny}
+                                      onChange={(event) => setEditPriceCny(event.target.value)}
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`edit-price-rub-${item.id}`}>Цена RUB</Label>
+                                    <Input
+                                      id={`edit-price-rub-${item.id}`}
+                                      value={editPriceRub}
+                                      onChange={(event) => setEditPriceRub(event.target.value)}
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`edit-benefit-${item.id}`}>Выгода RUB</Label>
+                                    <Input
+                                      id={`edit-benefit-${item.id}`}
+                                      value={editBenefitRub}
+                                      onChange={(event) => setEditBenefitRub(event.target.value)}
+                                    />
+                                  </div>
+                                </div>
+                                <div className="flex items-center justify-between rounded-lg border bg-white p-3">
+                                  <div>
+                                    <div className="text-sm font-medium">Опубликовано</div>
+                                    <div className="text-xs text-gray-500">Меняйте видимость позиции.</div>
+                                  </div>
+                                  <Switch checked={editPublished} onCheckedChange={setEditPublished} />
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                  <Button
+                                    onClick={updateShowcaseItem}
+                                    disabled={isShowcaseUpdating || isEditImageUploading}
+                                    className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700"
+                                  >
+                                    {isShowcaseUpdating ? "Сохранение..." : "Сохранить изменения"}
+                                  </Button>
+                                  <Button variant="outline" onClick={cancelEditShowcaseItem}>
+                                    Отмена
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))}
