@@ -20,14 +20,18 @@ function Logo({ width, height, size = "small", className }: LogoProps) {
   const resolvedWidth = width ?? resolvedSize.width
   const resolvedHeight = height ?? resolvedSize.height
   return (
-    <div className={`flex items-center ${className ?? ""}`.trim()}>
+    <div
+      className={`flex items-center ${className ?? ""}`.trim()}
+      style={{ width: resolvedWidth, height: resolvedHeight }}
+    >
       <Image
         src="/logo.png"
         alt="Alipayfast Logo"
         width={resolvedWidth}
         height={resolvedHeight}
-        className="h-auto w-auto"
+        className="h-full w-full object-contain"
         priority={size === "large"}
+        style={{ maxWidth: resolvedWidth, maxHeight: resolvedHeight }}
       />
     </div>
   )
