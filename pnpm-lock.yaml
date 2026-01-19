@@ -89,18 +89,6 @@ importers:
       date-fns:
         specifier: ^3.6.0
         version: 3.6.0
-      expo:
-        specifier: latest
-        version: 54.0.30(@babel/core@7.28.5)(react-native@0.83.1(@babel/core@7.28.5)(@types/react@18.0.0)(react@18.2.0))(react@18.2.0)
-      expo-asset:
-        specifier: latest
-        version: 12.0.12(expo@54.0.30(@babel/core@7.28.5)(react-native@0.83.1(@babel/core@7.28.5)(@types/react@18.0.0)(react@18.2.0))(react@18.2.0))(react-native@0.83.1(@babel/core@7.28.5)(@types/react@18.0.0)(react@18.2.0))(react@18.2.0)
-      expo-file-system:
-        specifier: latest
-        version: 19.0.21(expo@54.0.30(@babel/core@7.28.5)(react-native@0.83.1(@babel/core@7.28.5)(@types/react@18.0.0)(react@18.2.0))(react@18.2.0))(react-native@0.83.1(@babel/core@7.28.5)(@types/react@18.0.0)(react@18.2.0))
-      expo-gl:
-        specifier: latest
-        version: 16.0.9(expo@54.0.30(@babel/core@7.28.5)(react-native@0.83.1(@babel/core@7.28.5)(@types/react@18.0.0)(react@18.2.0))(react@18.2.0))(react-dom@18.2.0(react@18.2.0))(react-native@0.83.1(@babel/core@7.28.5)(@types/react@18.0.0)(react@18.2.0))(react@18.2.0)
       framer-motion:
         specifier: ^11.11.17
         version: 11.11.17(@emotion/is-prop-valid@1.4.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
@@ -119,9 +107,6 @@ importers:
       react-dom:
         specifier: 18.2.0
         version: 18.2.0(react@18.2.0)
-      react-native:
-        specifier: latest
-        version: 0.83.1(@babel/core@7.28.5)(@types/react@18.0.0)(react@18.2.0)
       recharts:
         specifier: ^2.13.3
         version: 2.13.3(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
