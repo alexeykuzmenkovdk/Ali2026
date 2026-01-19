@@ -10,6 +10,10 @@
 This repository will stay in sync with your deployed chats on [v0.app](https://v0.app).
 Any changes you make to your deployed app will be automatically pushed to this repository from [v0.app](https://v0.app).
 
+## Platform scope
+
+This codebase is a web-only Next.js application and does not use React Native or Expo dependencies. If you see React Native/Expo packages in a lockfile, they should be treated as stale and removed to avoid install conflicts. Use the npm `package-lock` as the source of truth for installs; pnpm lockfiles are intentionally omitted.
+
 ## Deployment
 
 Your project is live at:
