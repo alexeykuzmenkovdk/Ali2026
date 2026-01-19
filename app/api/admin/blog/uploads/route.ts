@@ -14,7 +14,17 @@ export async function POST(request: Request) {
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "No file" }, { status: 400 })
   }
-  if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) {
+
+  const mimeType = file.type?.toLowerCase() ?? ""
+  const extension = file.name.split(".").pop()?.toLowerCase() ?? ""
+  const isImageMime = mimeType.startsWith("image/")
+  const isVideoMime = mimeType.startsWith("video/")
+  const allowedImageExtensions = new Set(["jpg", "jpeg", "png", "gif", "webp", "avif", "bmp", "tiff", "tif", "svg"])
+  const allowedVideoExtensions = new Set(["mp4", "webm", "mov", "avi", "mkv", "m4v", "ogg"])
+  const isAllowedByExtension =
+    extension.length > 0 && (allowedImageExtensions.has(extension) || allowedVideoExtensions.has(extension))
+
+  if (!isImageMime && !isVideoMime && !isAllowedByExtension) {
     return NextResponse.json({ error: "Unsupported file type" }, { status: 400 })
   }
 
