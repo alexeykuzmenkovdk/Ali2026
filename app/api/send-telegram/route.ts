@@ -18,25 +18,25 @@ async function sendTelegramMessage(message: string) {
   console.log("[SERVER] Попытка отправки сообщения в Telegram")
 
   // Получаем токен бота и ID чата из переменных окружения
-  const botToken = process.env.TELEGRAM_BOT_TOKEN
-  const chatId = process.env.TELEGRAM_CHAT_ID
+  const botToken = process.env.TELEGRAM_SITE_BOT_TOKEN ?? process.env.TELEGRAM_BOT_TOKEN
+  const chatId = process.env.TELEGRAM_SITE_CHAT_ID ?? process.env.TELEGRAM_CHAT_ID
 
   // Проверяем наличие необходимых переменных окружения
   if (!botToken || botToken === "YOUR_BOT_TOKEN") {
-    console.log("[SERVER] Отсутствует или некорректный TELEGRAM_BOT_TOKEN")
+    console.log("[SERVER] Отсутствует или некорректный TELEGRAM_SITE_BOT_TOKEN")
     return {
       success: false,
       demo: true,
-      error: "Не настроен токен бота Telegram. Пожалуйста, добавьте TELEGRAM_BOT_TOKEN в переменные окружения.",
+      error: "Не настроен токен бота Telegram. Пожалуйста, добавьте TELEGRAM_SITE_BOT_TOKEN в переменные окружения.",
     }
   }
 
   if (!chatId || chatId === "YOUR_CHAT_ID") {
-    console.log("[SERVER] Отсутствует или некорректный TELEGRAM_CHAT_ID")
+    console.log("[SERVER] Отсутствует или некорректный TELEGRAM_SITE_CHAT_ID")
     return {
       success: false,
       demo: true,
-      error: "Не настроен ID чата Telegram. Пожалуйста, добавьте TELEGRAM_CHAT_ID в переменные окружения.",
+      error: "Не настроен ID чата Telegram. Пожалуйста, добавьте TELEGRAM_SITE_CHAT_ID в переменные окружения.",
     }
   }
 
@@ -65,7 +65,7 @@ async function sendTelegramMessage(message: string) {
       if (data.description?.includes("chat not found")) {
         return {
           success: false,
-          error: "Чат не найден. Убедитесь, что вы правильно настроили TELEGRAM_CHAT_ID и инициировали бота.",
+          error: "Чат не найден. Убедитесь, что вы правильно настроили TELEGRAM_SITE_CHAT_ID и инициировали бота.",
           telegramError: data.description,
         }
       }
@@ -122,7 +122,7 @@ ${data.comment ? `<b>Комментарий:</b> ${data.comment}` : ""}
         message: "Демо-режим: Уведомление было бы отправлено в Telegram",
         setupRequired: true,
         setupInstructions:
-          "Для настройки уведомлений в Telegram, добавьте TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID в переменные окружения.",
+          "Для настройки уведомлений в Telegram, добавьте TELEGRAM_SITE_BOT_TOKEN и TELEGRAM_SITE_CHAT_ID в переменные окружения.",
       })
     }
 
@@ -142,9 +142,9 @@ ${data.comment ? `<b>Комментарий:</b> ${data.comment}` : ""}
             setupInstructions: `
 Для корректной настройки Telegram-бота:
 1. Создайте бота через @BotFather в Telegram
-2. Получите токен бота и добавьте его как TELEGRAM_BOT_TOKEN
+2. Получите токен бота и добавьте его как TELEGRAM_SITE_BOT_TOKEN
 3. Отправьте сообщение боту в Telegram, чтобы инициировать чат
-4. Получите ID чата через @userinfobot или API и добавьте его как TELEGRAM_CHAT_ID
+4. Получите ID чата через @userinfobot или API и добавьте его как TELEGRAM_SITE_CHAT_ID
 5. Убедитесь, что ID чата - это числовое значение (например, 123456789)
           `,
           },

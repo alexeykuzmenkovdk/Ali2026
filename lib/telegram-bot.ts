@@ -14,9 +14,9 @@ interface SendPhotoPayload {
 const apiBase = "https://api.telegram.org"
 
 function getBotToken() {
-  const token = process.env.TELEGRAM_BOT_TOKEN
+  const token = process.env.TELEGRAM_MINI_APP_BOT_TOKEN ?? process.env.TELEGRAM_BOT_TOKEN
   if (!token) {
-    throw new Error("Missing TELEGRAM_BOT_TOKEN")
+    throw new Error("Missing TELEGRAM_MINI_APP_BOT_TOKEN")
   }
   return token
 }

@@ -8,8 +8,8 @@ export async function POST(request: NextRequest) {
     const { orderNumber, name, contact, contactMethod, telegramUsername, message, productLink, type } = body
 
     // Проверяем наличие переменных окружения
-    const botToken = process.env.TELEGRAM_BOT_TOKEN
-    const chatId = process.env.TELEGRAM_CHAT_ID
+    const botToken = process.env.TELEGRAM_SITE_BOT_TOKEN ?? process.env.TELEGRAM_BOT_TOKEN
+    const chatId = process.env.TELEGRAM_SITE_CHAT_ID ?? process.env.TELEGRAM_CHAT_ID
 
     if (!botToken || !chatId) {
       console.log("[API] Переменные окружения не настроены, работаем в демо-режиме")
