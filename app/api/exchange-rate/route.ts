@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { EXCHANGE_CONFIG } from "@/lib/exchange-config"
 
+export const dynamic = "force-dynamic"
+
 // Простая функция для получения курса юаня к рублю от ЦБ РФ
 export async function GET(request: Request) {
   try {
