@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next"
+import { BLOG_CATEGORIES } from "@/lib/blog"
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = "https://alipayfast.ru"
@@ -40,5 +41,17 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly",
       priority: 0.8,
     },
+    {
+      url: `${baseUrl}/blog`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    ...BLOG_CATEGORIES.map((category) => ({
+      url: `${baseUrl}/blog/${category.slug}`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    })),
   ]
 }

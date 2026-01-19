@@ -71,6 +71,21 @@ export async function ensureSchema() {
       is_published BOOLEAN NOT NULL DEFAULT FALSE
     );
 
+    CREATE TABLE IF NOT EXISTS blog_posts (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      slug TEXT NOT NULL,
+      category TEXT NOT NULL,
+      excerpt TEXT,
+      content TEXT,
+      cover_image_url TEXT,
+      cover_video_url TEXT,
+      is_published BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+      updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+      UNIQUE(category, slug)
+    );
+
     CREATE TABLE IF NOT EXISTS sourcing_requests (
       id TEXT PRIMARY KEY,
       user_id BIGINT NOT NULL,
