@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { adminCancelOrder } from "@/lib/store"
+import { sendMessage } from "@/lib/telegram-bot"
 
 function requireAdminKey(request: Request) {
   const expected = process.env.ADMIN_API_KEY
@@ -17,6 +18,11 @@ export async function POST(request: Request, { params }: { params: { orderId: st
   if (!order) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 })
   }
+
+  sendMessage({
+    chat_id: order.userId,
+    text: `⛔️ Заявка #${params.orderId.slice(0, 6)} отменена администратором. Откройте мини-приложение для деталей.`,
+  }).catch(() => null)
 
   return NextResponse.json({ order })
 }

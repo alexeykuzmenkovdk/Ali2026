@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
-import { completeOrder } from "@/lib/store"
+import { completeOrder, getOrderById } from "@/lib/store"
+import { sendMessage } from "@/lib/telegram-bot"
 
 function requireAdminKey(request: Request) {
   const expected = process.env.ADMIN_API_KEY
@@ -20,6 +21,14 @@ export async function POST(request: Request, { params }: { params: { orderId: st
 
   if ("error" in result) {
     return NextResponse.json({ error: result.error }, { status: 409 })
+  }
+
+  const order = await getOrderById(params.orderId)
+  if (order) {
+    sendMessage({
+      chat_id: order.userId,
+      text: `🎉 Заявка #${params.orderId.slice(0, 6)} завершена. Спасибо! Откройте мини-приложение для истории.`,
+    }).catch(() => null)
   }
 
   return NextResponse.json({ order: result })

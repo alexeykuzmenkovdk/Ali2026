@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
-import { verifyPaymentStep } from "@/lib/store"
+import { getOrderById, verifyPaymentStep } from "@/lib/store"
+import { sendMessage } from "@/lib/telegram-bot"
 
 function requireAdminKey(request: Request) {
   const expected = process.env.ADMIN_API_KEY
@@ -16,6 +17,14 @@ export async function POST(request: Request, { params }: { params: { orderId: st
   const step = await verifyPaymentStep(params.orderId, params.stepId)
   if (!step) {
     return NextResponse.json({ error: "Step not found" }, { status: 404 })
+  }
+
+  const order = await getOrderById(params.orderId)
+  if (order) {
+    sendMessage({
+      chat_id: order.userId,
+      text: `✅ Платеж подтвержден по заявке #${params.orderId.slice(0, 6)}. Откройте мини-приложение для продолжения.`,
+    }).catch(() => null)
   }
 
   return NextResponse.json({ step })

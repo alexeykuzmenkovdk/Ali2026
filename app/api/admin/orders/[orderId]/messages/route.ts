@@ -1,16 +1,21 @@
 import { NextResponse } from "next/server"
-import { addMessage, getOrderById } from "@/lib/store"
+import { addMessage, getOrderById, listOrderMessages } from "@/lib/store"
 import { sendMessage } from "@/lib/telegram-bot"
+import { requireAdminAuth } from "@/lib/admin-auth"
 
-function requireAdminKey(request: Request) {
-  const expected = process.env.ADMIN_API_KEY
-  if (!expected) return false
-  const provided = request.headers.get("x-admin-key")
-  return expected === provided
+export async function GET(request: Request, { params }: { params: { orderId: string } }) {
+  const auth = requireAdminAuth(request)
+  if (!auth.ok) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  const messages = await listOrderMessages(params.orderId)
+  return NextResponse.json({ messages })
 }
 
 export async function POST(request: Request, { params }: { params: { orderId: string } }) {
-  if (!requireAdminKey(request)) {
+  const auth = requireAdminAuth(request)
+  if (!auth.ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
@@ -25,7 +30,7 @@ export async function POST(request: Request, { params }: { params: { orderId: st
   if (order) {
     sendMessage({
       chat_id: order.userId,
-      text: `✉️ Оператор ответил по заявке #${params.orderId.slice(0, 6)}\n${body.text ?? ""}`,
+      text: `✉️ Оператор ответил по заявке #${params.orderId.slice(0, 6)}\n${body.text ?? ""}\n\nОткройте мини-приложение для продолжения.`,
     }).catch(() => null)
   }
 

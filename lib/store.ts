@@ -20,6 +20,8 @@ export interface Order {
   rate: number
   alipayId?: string | null
   fullName?: string | null
+  contactUsername?: string | null
+  contactPhone?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -164,6 +166,8 @@ export async function createOrder(data: {
   rate: number
   alipayId?: string
   fullName?: string
+  contactUsername?: string
+  contactPhone?: string
 }) {
   await ensureReady()
   const pool = getPool()
@@ -173,9 +177,22 @@ export async function createOrder(data: {
   await pool.query("BEGIN")
   try {
     await pool.query(
-      `INSERT INTO orders (id, user_id, status, total_rub, total_cny, rate, alipay_id, full_name, created_at, updated_at)
-       VALUES ($1, $2, 'CREATED', $3, $4, $5, $6, $7, $8, $9)`,
-      [orderId, data.userId, data.totalRub, data.totalCny, data.rate, data.alipayId ?? null, data.fullName ?? null, now, now],
+      `INSERT INTO orders
+        (id, user_id, status, total_rub, total_cny, rate, alipay_id, full_name, contact_username, contact_phone, created_at, updated_at)
+       VALUES ($1, $2, 'CREATED', $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+      [
+        orderId,
+        data.userId,
+        data.totalRub,
+        data.totalCny,
+        data.rate,
+        data.alipayId ?? null,
+        data.fullName ?? null,
+        data.contactUsername ?? null,
+        data.contactPhone ?? null,
+        now,
+        now,
+      ],
     )
 
     await pool.query(
@@ -251,6 +268,13 @@ export async function listShowcaseItems() {
   return result.rows.map(mapShowcase)
 }
 
+export async function listAllShowcaseItems() {
+  await ensureReady()
+  const pool = getPool()
+  const result = await pool.query("SELECT * FROM showcase_items ORDER BY title ASC")
+  return result.rows.map(mapShowcase)
+}
+
 export async function addShowcaseItem(item: Omit<ShowcaseItem, "id" | "isPublished"> & { isPublished?: boolean }) {
   await ensureReady()
   const pool = getPool()
@@ -264,6 +288,16 @@ export async function addShowcaseItem(item: Omit<ShowcaseItem, "id" | "isPublish
   return { ...item, id, isPublished: published }
 }
 
+export async function setShowcasePublish(id: string, isPublished: boolean) {
+  await ensureReady()
+  const pool = getPool()
+  const result = await pool.query(
+    "UPDATE showcase_items SET is_published = $2 WHERE id = $1 RETURNING *",
+    [id, isPublished],
+  )
+  return result.rows[0] ? mapShowcase(result.rows[0]) : undefined
+}
+
 export async function publishShowcaseItem(id: string) {
   await ensureReady()
   const pool = getPool()
@@ -272,6 +306,24 @@ export async function publishShowcaseItem(id: string) {
     [id],
   )
   return result.rows[0] ? mapShowcase(result.rows[0]) : undefined
+}
+
+export async function listOrders() {
+  await ensureReady()
+  const pool = getPool()
+  const result = await pool.query(
+    `SELECT o.*,
+      (SELECT COUNT(*) FROM order_messages m WHERE m.order_id = o.id) as message_count,
+      (SELECT text FROM order_messages m WHERE m.order_id = o.id ORDER BY created_at DESC LIMIT 1) as last_message
+     FROM orders o
+     ORDER BY created_at DESC`,
+  )
+
+  return result.rows.map((row) => ({
+    ...mapOrder(row),
+    messageCount: Number(row.message_count ?? 0),
+    lastMessage: row.last_message ?? null,
+  }))
 }
 
 export async function createSourcingRequest(data: {
@@ -470,6 +522,8 @@ function mapOrder(row: any): Order {
     rate: Number(row.rate),
     alipayId: row.alipay_id ?? null,
     fullName: row.full_name ?? null,
+    contactUsername: row.contact_username ?? null,
+    contactPhone: row.contact_phone ?? null,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
   }
