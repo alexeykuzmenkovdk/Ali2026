@@ -89,6 +89,7 @@ export default function AdminDashboard() {
   const [isOrdersLoading, setIsOrdersLoading] = useState<boolean>(false)
   const [isMessagesLoading, setIsMessagesLoading] = useState<boolean>(false)
   const [isMessageSending, setIsMessageSending] = useState<boolean>(false)
+  const [isQuickActionSending, setIsQuickActionSending] = useState<boolean>(false)
 
   const [showcaseItems, setShowcaseItems] = useState<ShowcaseItem[]>([])
   const [showcaseTitle, setShowcaseTitle] = useState<string>("")
@@ -557,6 +558,38 @@ export default function AdminDashboard() {
     }
   }
 
+  const sendQuickAction = async (text: string) => {
+    const sessionToken = checkAuthBeforeRequest()
+    if (!sessionToken || !selectedOrderId) return
+
+    setIsQuickActionSending(true)
+    try {
+      const response = await fetch(`/api/admin/orders/${selectedOrderId}/messages?token=${sessionToken}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      })
+      if (!response.ok) {
+        throw new Error("Failed to send quick action")
+      }
+      toast({
+        title: "Сообщение отправлено",
+        description: "Запрос отправлен клиенту в Telegram.",
+      })
+    } catch (error) {
+      console.error("Quick action error:", error)
+      toast({
+        title: "Ошибка",
+        description: "Не удалось отправить запрос клиенту",
+        variant: "destructive",
+      })
+    } finally {
+      if (mountedRef.current) {
+        setIsQuickActionSending(false)
+      }
+    }
+  }
+
   const fetchShowcase = async () => {
     const sessionToken = checkAuthBeforeRequest()
     if (!sessionToken) return
@@ -669,6 +702,8 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (activeTab === "orders") {
       fetchOrders()
+      const interval = window.setInterval(fetchOrders, 10000)
+      return () => window.clearInterval(interval)
     }
     if (activeTab === "showcase") {
       fetchShowcase()
@@ -678,6 +713,8 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (!selectedOrderId || activeTab !== "orders") return
     fetchOrderMessages(selectedOrderId)
+    const interval = window.setInterval(() => fetchOrderMessages(selectedOrderId), 5000)
+    return () => window.clearInterval(interval)
   }, [selectedOrderId, activeTab])
 
   // Выход из админ-панели
@@ -1119,21 +1156,52 @@ export default function AdminDashboard() {
                     <div className="text-sm text-gray-500">Выберите заявку слева, чтобы увидеть переписку.</div>
                   ) : (
                     <div className="space-y-4">
-                        <div className="rounded-lg border bg-gray-50 p-4 text-sm">
-                          <div className="font-medium">Заявка #{selectedOrderId.slice(0, 6)}</div>
-                          <div className="mt-1 text-gray-600">
-                            Клиент:{" "}
-                            <span className="font-medium">
-                              {(() => {
-                                const currentOrder = orders.find((order) => order.id === selectedOrderId)
-                                if (!currentOrder) return "-"
-                                if (currentOrder.contactUsername) return `@${currentOrder.contactUsername}`
-                                if (currentOrder.contactPhone) return currentOrder.contactPhone
-                                return `ID ${currentOrder.userId}`
-                              })()}
-                            </span>
-                          </div>
+                      <div className="rounded-lg border bg-gray-50 p-4 text-sm">
+                        <div className="font-medium">Заявка #{selectedOrderId.slice(0, 6)}</div>
+                        <div className="mt-1 text-gray-600">
+                          Клиент:{" "}
+                          <span className="font-medium">
+                            {(() => {
+                              const currentOrder = orders.find((order) => order.id === selectedOrderId)
+                              if (!currentOrder) return "-"
+                              if (currentOrder.contactUsername) return `@${currentOrder.contactUsername}`
+                              if (currentOrder.contactPhone) return currentOrder.contactPhone
+                              return `ID ${currentOrder.userId}`
+                            })()}
+                          </span>
                         </div>
+                      </div>
+
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <Button
+                          variant="outline"
+                          disabled={isQuickActionSending}
+                          onClick={() =>
+                            sendQuickAction(
+                              "Пожалуйста, отправьте QR-код для оплаты или скриншот экрана с QR-кодом. После этого вернитесь в мини-приложение.",
+                            )
+                          }
+                        >
+                          Запросить QR-код
+                        </Button>
+                        <Button
+                          variant="outline"
+                          disabled={isQuickActionSending}
+                          onClick={() =>
+                            sendQuickAction(
+                              "Пожалуйста, отправьте фото/видео подтверждения или нужный файл. После отправки вернитесь в мини-приложение.",
+                            )
+                          }
+                        >
+                          Запросить медиа
+                        </Button>
+                      </div>
+
+                      <div className="rounded-lg border bg-white p-4 text-sm">
+                        <div className="font-medium text-gray-900">QR-код Telegram</div>
+                        <p className="mt-1 text-xs text-gray-500">Можно отправить клиенту для быстрого перехода.</p>
+                        <img src="/telegram-qr.png" alt="QR Telegram" className="mt-3 h-32 w-32 rounded-md border" />
+                      </div>
 
                       <div className="max-h-[320px] space-y-3 overflow-y-auto rounded-lg border bg-white p-4">
                         {isMessagesLoading ? (
