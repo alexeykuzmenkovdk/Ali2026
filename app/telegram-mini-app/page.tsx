@@ -80,6 +80,7 @@ export default function TelegramMiniAppPage() {
   const [rateUpdatedAt, setRateUpdatedAt] = useState("")
   const [rubAmount, setRubAmount] = useState(50000)
   const [cnyAmount, setCnyAmount] = useState(4000)
+  const [contactPhone, setContactPhone] = useState("")
   const [receiptUrl, setReceiptUrl] = useState<string | null>(null)
   const [stageChecks, setStageChecks] = useState({
     amount: false,
@@ -281,6 +282,7 @@ export default function TelegramMiniAppPage() {
         totalRub: rubAmount,
         totalCny: cnyAmount,
         rate: orderRate,
+        contactPhone: contactPhone.trim() || undefined,
       }),
     })
 
@@ -472,6 +474,14 @@ export default function TelegramMiniAppPage() {
                               <div className="space-y-2">
                                 <label className="text-sm text-gray-600">Получаю (CNY)</label>
                                 <Input value={cnyAmount} onChange={(event) => handleCnyChange(event.target.value)} />
+                              </div>
+                              <div className="space-y-2">
+                                <label className="text-sm text-gray-600">Телефон для связи (если нет username)</label>
+                                <Input
+                                  value={contactPhone}
+                                  onChange={(event) => setContactPhone(event.target.value)}
+                                  placeholder="+7 999 000-00-00"
+                                />
                               </div>
                               <div className="rounded-xl border border-orange-100 bg-orange-50/60 p-3 text-xs text-gray-600 space-y-2">
                                 <div className="flex items-center justify-between">

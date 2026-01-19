@@ -30,6 +30,8 @@ export async function ensureSchema() {
       rate NUMERIC NOT NULL,
       alipay_id TEXT,
       full_name TEXT,
+      contact_username TEXT,
+      contact_phone TEXT,
       created_at TIMESTAMP WITH TIME ZONE NOT NULL,
       updated_at TIMESTAMP WITH TIME ZONE NOT NULL
     );
@@ -92,6 +94,10 @@ export async function ensureSchema() {
     ALTER TABLE orders
       ALTER COLUMN alipay_id DROP NOT NULL,
       ALTER COLUMN full_name DROP NOT NULL;
+
+    ALTER TABLE orders
+      ADD COLUMN IF NOT EXISTS contact_username TEXT,
+      ADD COLUMN IF NOT EXISTS contact_phone TEXT;
 
     ALTER TABLE admin_sessions
       ADD COLUMN IF NOT EXISTS sourcing_request_id TEXT;
