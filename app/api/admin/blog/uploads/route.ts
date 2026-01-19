@@ -38,5 +38,9 @@ export async function POST(request: Request) {
 
   const baseUrl = process.env.UPLOADS_BASE_URL ?? "/uploads/blog"
   const normalizedBase = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl
-  return NextResponse.json({ url: `${normalizedBase}/${safeName}` })
+  const absoluteBase =
+    normalizedBase.startsWith("http") || normalizedBase.startsWith("/")
+      ? normalizedBase
+      : `/${normalizedBase}`
+  return NextResponse.json({ url: `${absoluteBase}/${safeName}` })
 }
