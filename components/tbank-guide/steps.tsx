@@ -245,16 +245,18 @@ export function TBankSteps() {
                     </h4>
                     <ol className="space-y-3 list-decimal list-inside text-gray-700">
                       <li className="leading-relaxed">Перейдите в историю переводов и нажмите на нужный платеж</li>
-                      <li className="leading-relaxed">Нажмите на "Документы по операции"</li>
-                      <li className="leading-relaxed">Откроется чек, нажмите на иконку "Поделиться" справа сверху</li>
+                      <li className="leading-relaxed">Нажмите на &quot;Документы по операции&quot;</li>
+                      <li className="leading-relaxed">
+                        Откроется чек, нажмите на иконку &quot;Поделиться&quot; справа сверху
+                      </li>
                       <li className="leading-relaxed">
                         В появившемся снизу меню выберите{" "}
-                        <span className="font-bold text-orange-600">"Отправить по почте"</span> (НЕ ПРИЛОЖЕНИЕ ПОЧТЫ, а
-                        именно сам пункт <span className="font-bold">"ОТПРАВИТЬ ПО ПОЧТЕ"</span>)
+                        <span className="font-bold text-orange-600">&quot;Отправить по почте&quot;</span> (НЕ ПРИЛОЖЕНИЕ
+                        ПОЧТЫ, а именно сам пункт <span className="font-bold">&quot;ОТПРАВИТЬ ПО ПОЧТЕ&quot;</span>)
                       </li>
-                      <li className="leading-relaxed">Затем нажмите на пункт "Другой e-mail"</li>
+                      <li className="leading-relaxed">Затем нажмите на пункт &quot;Другой e-mail&quot;</li>
                       <li className="leading-relaxed">Вставьте электронную почту которую вам предоставили</li>
-                      <li className="leading-relaxed font-semibold">Нажмите "Готово"</li>
+                      <li className="leading-relaxed font-semibold">Нажмите &quot;Готово&quot;</li>
                     </ol>
                   </div>
 
@@ -274,7 +276,7 @@ export function TBankSteps() {
                       </li>
                       <li className="leading-relaxed">В разделе «Получатель» выберите «Другой e-mail»</li>
                       <li className="leading-relaxed">Вставьте электронную почту которую вам предоставили</li>
-                      <li className="leading-relaxed font-semibold">Нажмите "Готово"</li>
+                      <li className="leading-relaxed font-semibold">Нажмите &quot;Готово&quot;</li>
                     </ol>
                   </div>
 
@@ -329,7 +331,7 @@ export function TBankSteps() {
                   <div className="space-y-6">
                     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border-2 border-blue-200">
                       <h4 className="font-bold text-lg mb-4 text-blue-900">
-                        Шаг 5.1: Найдите раздел "Оплатить и получить"
+                        Шаг 5.1: Найдите раздел &quot;Оплатить и получить&quot;
                       </h4>
                       <div className="relative w-full max-w-md mx-auto mb-4">
                         <Image
@@ -341,12 +343,14 @@ export function TBankSteps() {
                         />
                       </div>
                       <p className="text-gray-700 text-center">
-                        На главной странице Alipay нажмите на кнопку "Оплатить и получить"
+                        На главной странице Alipay нажмите на кнопку &quot;Оплатить и получить&quot;
                       </p>
                     </div>
 
                     <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6 border-2 border-purple-200">
-                      <h4 className="font-bold text-lg mb-4 text-purple-900">Шаг 5.2: Выберите "Прием платежей"</h4>
+                      <h4 className="font-bold text-lg mb-4 text-purple-900">
+                        Шаг 5.2: Выберите &quot;Прием платежей&quot;
+                      </h4>
                       <div className="relative w-full max-w-md mx-auto mb-4">
                         <Image
                           src="/images/d0-a8-d0-b0-d0-b3-205-20-282-29.jpg"
@@ -356,7 +360,7 @@ export function TBankSteps() {
                           className="rounded-lg shadow-lg border-2 border-purple-300"
                         />
                       </div>
-                      <p className="text-gray-700 text-center">В открывшемся меню выберите "Прием платежей"</p>
+                      <p className="text-gray-700 text-center">В открывшемся меню выберите &quot;Прием платежей&quot;</p>
                     </div>
 
                     <div className="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-xl p-6 border-2 border-orange-200">
@@ -371,7 +375,7 @@ export function TBankSteps() {
                         />
                       </div>
                       <p className="text-gray-700 text-center">
-                        Ваш личный QR-код для получения платежей. Нажмите "Сохранить изображение"
+                        Ваш личный QR-код для получения платежей. Нажмите &quot;Сохранить изображение&quot;
                       </p>
                     </div>
                   </div>
