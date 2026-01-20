@@ -433,6 +433,13 @@
 .blog-content {
   overflow-wrap: anywhere;
   word-break: break-word;
+  line-height: 1.7;
+}
+
+.blog-content::after {
+  content: "";
+  display: block;
+  clear: both;
 }
 
 .blog-content * {
@@ -515,6 +522,18 @@
   .blog-content .blog-gallery {
     grid-template-columns: 1fr;
   }
+
+  .blog-content figure.blog-media {
+    float: none;
+    width: 100%;
+    margin: 1rem 0;
+  }
+
+  .tiptap-media {
+    float: none;
+    width: 100%;
+    margin: 1rem 0;
+  }
 }
 
 .blog-content iframe {
@@ -522,18 +541,21 @@
 }
 
 .blog-content figure.blog-media {
-  width: var(--media-width, 100%);
+  width: min(var(--media-width, 100%), 100%);
   margin: 1.5rem auto;
+  clear: both;
 }
 
 .blog-content figure.blog-media[data-align="left"] {
-  margin-left: 0;
-  margin-right: auto;
+  float: left;
+  clear: none;
+  margin: 0.5rem 1.5rem 1rem 0;
 }
 
 .blog-content figure.blog-media[data-align="right"] {
-  margin-left: auto;
-  margin-right: 0;
+  float: right;
+  clear: none;
+  margin: 0.5rem 0 1rem 1.5rem;
 }
 
 .blog-content figure.blog-media img,
@@ -566,16 +588,18 @@
 
 .tiptap-editor__toolbar {
   position: sticky;
-  top: 1rem;
-  z-index: 10;
+  top: 0.75rem;
+  z-index: 30;
   background: rgba(248, 250, 252, 0.95);
   backdrop-filter: blur(6px);
+  pointer-events: auto;
 }
 
 .tiptap-editor__content {
   min-height: 260px;
   padding: 1rem;
   outline: none;
+  line-height: 1.6;
 }
 
 .tiptap-editor__content > * + * {
@@ -603,23 +627,26 @@
 }
 
 .tiptap-media {
-  width: var(--media-width, 100%);
+  width: min(var(--media-width, 100%), 100%);
   margin: 1.25rem auto;
   border-radius: 1rem;
   border: 1px solid #e2e8f0;
   padding: 0.75rem;
   background: #f8fafc;
   position: relative;
+  clear: both;
 }
 
 .tiptap-media[data-align="left"] {
-  margin-left: 0;
-  margin-right: auto;
+  float: left;
+  clear: none;
+  margin: 0.5rem 1.5rem 1rem 0;
 }
 
 .tiptap-media[data-align="right"] {
-  margin-left: auto;
-  margin-right: 0;
+  float: right;
+  clear: none;
+  margin: 0.5rem 0 1rem 1.5rem;
 }
 
 .tiptap-media.is-selected {
