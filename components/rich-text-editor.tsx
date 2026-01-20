@@ -1,37 +1,38 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type ClipboardEvent } from "react"
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type CSSProperties } from "react"
 import {
   AlignCenter,
   AlignLeft,
   AlignRight,
-  ArrowDown,
-  ArrowUp,
   Bold,
-  Eye,
   Heading2,
   Heading3,
   ImageIcon,
-  Indent,
   Italic,
+  Link as LinkIcon,
   List,
   ListOrdered,
   Minus,
-  Outdent,
   Plus,
-  Smartphone,
+  Quote,
+  TableIcon,
   Underline,
   Video,
 } from "lucide-react"
+import { Node, mergeAttributes } from "@tiptap/core"
+import { EditorContent, NodeViewWrapper, ReactNodeViewRenderer, useEditor, type NodeViewProps } from "@tiptap/react"
+import StarterKit from "@tiptap/starter-kit"
+import UnderlineExtension from "@tiptap/extension-underline"
+import Link from "@tiptap/extension-link"
+import TextAlign from "@tiptap/extension-text-align"
+import Placeholder from "@tiptap/extension-placeholder"
+import Dropcursor from "@tiptap/extension-dropcursor"
+import Table from "@tiptap/extension-table"
+import TableRow from "@tiptap/extension-table-row"
+import TableHeader from "@tiptap/extension-table-header"
+import TableCell from "@tiptap/extension-table-cell"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
 
 interface RichTextEditorProps {
   value: string
@@ -42,819 +43,747 @@ interface RichTextEditorProps {
   id?: string
 }
 
-const formatBlock = (tag: string) => {
-  document.execCommand("formatBlock", false, tag)
+type MediaAlign = "left" | "center" | "right"
+
+const FOOTNOTE_SYMBOLS = ["¹", "²", "³", "⁴", "⁵", "⁶"]
+
+const ImageBlock = Node.create({
+  name: "imageBlock",
+  group: "block",
+  atom: true,
+  draggable: true,
+  isolating: true,
+  addAttributes() {
+    return {
+      src: {
+        default: null,
+      },
+      alt: {
+        default: "",
+      },
+      title: {
+        default: "",
+      },
+      align: {
+        default: "center",
+      },
+      width: {
+        default: 100,
+      },
+      caption: {
+        default: "",
+      },
+    }
+  },
+  parseHTML() {
+    return [
+      {
+        tag: 'figure[data-type="image"]',
+        getAttrs: (element) => {
+          if (!(element instanceof HTMLElement)) return false
+          const img = element.querySelector("img")
+          const caption = element.querySelector("figcaption")
+          return {
+            src: img?.getAttribute("src") ?? null,
+            alt: img?.getAttribute("alt") ?? "",
+            title: img?.getAttribute("title") ?? "",
+            align: element.dataset.align ?? "center",
+            width: Number(element.dataset.width ?? 100),
+            caption: caption?.textContent ?? "",
+          }
+        },
+      },
+      {
+        tag: "img[src]",
+        getAttrs: (element) => {
+          if (!(element instanceof HTMLImageElement)) return false
+          return {
+            src: element.getAttribute("src"),
+            alt: element.getAttribute("alt") ?? "",
+            title: element.getAttribute("title") ?? "",
+            align: "center",
+            width: 100,
+            caption: "",
+          }
+        },
+      },
+    ]
+  },
+  renderHTML({ HTMLAttributes }) {
+    const figureAttributes = mergeAttributes(HTMLAttributes, {
+      "data-type": "image",
+      "data-align": HTMLAttributes.align,
+      "data-width": HTMLAttributes.width,
+      class: "blog-media",
+      style: `--media-width: ${HTMLAttributes.width}%`,
+    })
+    const children = [
+      [
+        "img",
+        {
+          src: HTMLAttributes.src,
+          alt: HTMLAttributes.alt ?? "",
+          title: HTMLAttributes.title ?? "",
+          class: "blog-media__element",
+        },
+      ],
+    ]
+    if (HTMLAttributes.caption) {
+      children.push(["figcaption", { class: "blog-media__caption" }, HTMLAttributes.caption])
+    }
+    return ["figure", figureAttributes, ...children]
+  },
+  addNodeView() {
+    return ReactNodeViewRenderer(ImageBlockView)
+  },
+})
+
+const VideoBlock = Node.create({
+  name: "videoBlock",
+  group: "block",
+  atom: true,
+  draggable: true,
+  isolating: true,
+  addAttributes() {
+    return {
+      src: {
+        default: null,
+      },
+      align: {
+        default: "center",
+      },
+      width: {
+        default: 100,
+      },
+      caption: {
+        default: "",
+      },
+    }
+  },
+  parseHTML() {
+    return [
+      {
+        tag: 'figure[data-type="video"]',
+        getAttrs: (element) => {
+          if (!(element instanceof HTMLElement)) return false
+          const video = element.querySelector("video")
+          const caption = element.querySelector("figcaption")
+          return {
+            src: video?.getAttribute("src") ?? null,
+            align: element.dataset.align ?? "center",
+            width: Number(element.dataset.width ?? 100),
+            caption: caption?.textContent ?? "",
+          }
+        },
+      },
+      {
+        tag: "video[src]",
+        getAttrs: (element) => {
+          if (!(element instanceof HTMLVideoElement)) return false
+          return {
+            src: element.getAttribute("src"),
+            align: "center",
+            width: 100,
+            caption: "",
+          }
+        },
+      },
+    ]
+  },
+  renderHTML({ HTMLAttributes }) {
+    const figureAttributes = mergeAttributes(HTMLAttributes, {
+      "data-type": "video",
+      "data-align": HTMLAttributes.align,
+      "data-width": HTMLAttributes.width,
+      class: "blog-media",
+      style: `--media-width: ${HTMLAttributes.width}%`,
+    })
+    const children = [
+      [
+        "video",
+        {
+          src: HTMLAttributes.src,
+          controls: "true",
+          class: "blog-media__element",
+        },
+      ],
+    ]
+    if (HTMLAttributes.caption) {
+      children.push(["figcaption", { class: "blog-media__caption" }, HTMLAttributes.caption])
+    }
+    return ["figure", figureAttributes, ...children]
+  },
+  addNodeView() {
+    return ReactNodeViewRenderer(VideoBlockView)
+  },
+})
+
+const Footnote = Node.create({
+  name: "footnote",
+  group: "inline",
+  inline: true,
+  atom: true,
+  selectable: true,
+  addAttributes() {
+    return {
+      label: {
+        default: "¹",
+      },
+      text: {
+        default: "",
+      },
+    }
+  },
+  parseHTML() {
+    return [
+      {
+        tag: "sup[data-footnote]",
+        getAttrs: (element) => {
+          if (!(element instanceof HTMLElement)) return false
+          return {
+            label: element.textContent ?? "¹",
+            text: element.dataset.footnote ?? "",
+          }
+        },
+      },
+    ]
+  },
+  renderHTML({ HTMLAttributes }) {
+    return [
+      "sup",
+      mergeAttributes(HTMLAttributes, {
+        "data-footnote": HTMLAttributes.text ?? "",
+        class: "blog-footnote",
+      }),
+      HTMLAttributes.label ?? "¹",
+    ]
+  },
+  addNodeView() {
+    return ReactNodeViewRenderer(FootnoteView)
+  },
+})
+
+function ImageBlockView({ node, updateAttributes, selected, editor, getPos }: NodeViewProps) {
+  const { src, align, width, caption } = node.attrs
+  const widthValue = Number(width) || 100
+
+  return (
+    <NodeViewWrapper
+      className={`blog-media tiptap-media ${selected ? "is-selected" : ""}`}
+      data-type="image"
+      data-align={align}
+      data-width={widthValue}
+      style={{ "--media-width": `${widthValue}%` } as CSSProperties}
+      contentEditable={false}
+    >
+      <div className="tiptap-media__canvas">
+        {src ? <img src={src} alt="" className="blog-media__element" draggable={false} /> : null}
+        <MediaControls
+          align={align}
+          onAlignChange={(nextAlign) => updateAttributes({ align: nextAlign })}
+          width={widthValue}
+          onWidthChange={(nextWidth) => updateAttributes({ width: nextWidth })}
+          onSelect={() => {
+            const position = getPos?.()
+            if (typeof position === "number") {
+              editor.commands.setNodeSelection(position)
+            }
+          }}
+        />
+      </div>
+      <div className="tiptap-media__caption">
+        <input
+          className="tiptap-media__caption-input"
+          type="text"
+          placeholder="Подпись к изображению"
+          value={caption ?? ""}
+          onChange={(event) => updateAttributes({ caption: event.target.value })}
+        />
+      </div>
+    </NodeViewWrapper>
+  )
 }
 
-const HTML_PLACEHOLDERS = {
-  splitMedia: '<div class="blog-split__placeholder">Добавьте фото или видео</div>',
-  splitText: '<div class="blog-split__text"><p>Добавьте текст...</p></div>',
-  gallery: '<div class="blog-gallery__placeholder">Добавьте изображения...</div>',
+function VideoBlockView({ node, updateAttributes, selected, editor, getPos }: NodeViewProps) {
+  const { src, align, width, caption } = node.attrs
+  const widthValue = Number(width) || 100
+
+  return (
+    <NodeViewWrapper
+      className={`blog-media tiptap-media ${selected ? "is-selected" : ""}`}
+      data-type="video"
+      data-align={align}
+      data-width={widthValue}
+      style={{ "--media-width": `${widthValue}%` } as CSSProperties}
+      contentEditable={false}
+    >
+      <div className="tiptap-media__canvas">
+        {src ? <video src={src} controls className="blog-media__element" /> : null}
+        <MediaControls
+          align={align}
+          onAlignChange={(nextAlign) => updateAttributes({ align: nextAlign })}
+          width={widthValue}
+          onWidthChange={(nextWidth) => updateAttributes({ width: nextWidth })}
+          onSelect={() => {
+            const position = getPos?.()
+            if (typeof position === "number") {
+              editor.commands.setNodeSelection(position)
+            }
+          }}
+        />
+      </div>
+      <div className="tiptap-media__caption">
+        <input
+          className="tiptap-media__caption-input"
+          type="text"
+          placeholder="Подпись к видео"
+          value={caption ?? ""}
+          onChange={(event) => updateAttributes({ caption: event.target.value })}
+        />
+      </div>
+    </NodeViewWrapper>
+  )
 }
 
-const escapeHtml = (input: string) =>
-  input
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;")
+function FootnoteView({ node, updateAttributes, selected }: NodeViewProps) {
+  const { label, text } = node.attrs
 
-const applyInlineFormatting = (input: string) => {
-  let output = escapeHtml(input)
-  output = output.replace(/`([^`]+)`/g, "<code>$1</code>")
-  output = output.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-  output = output.replace(/__([^_]+)__/g, "<strong>$1</strong>")
-  output = output.replace(/\*([^*]+)\*/g, "<em>$1</em>")
-  output = output.replace(/_([^_]+)_/g, "<em>$1</em>")
-  output = output.replace(/~~([^~]+)~~/g, "<del>$1</del>")
-  return output
-}
-
-const markdownToHtml = (input: string) => {
-  const lines = input.replace(/\r\n/g, "\n").split("\n")
-  const htmlParts: string[] = []
-  let listType: "ul" | "ol" | null = null
-  let paragraphLines: string[] = []
-
-  const flushParagraph = () => {
-    if (paragraphLines.length === 0) return
-    const paragraph = paragraphLines.map((line) => applyInlineFormatting(line)).join("<br />")
-    htmlParts.push(`<p>${paragraph}</p>`)
-    paragraphLines = []
+  const editFootnote = () => {
+    const nextLabel = window.prompt("Метка сноски", label ?? "¹")
+    if (nextLabel === null) return
+    const nextText = window.prompt("Текст сноски", text ?? "")
+    if (nextText === null) return
+    updateAttributes({ label: nextLabel || "¹", text: nextText })
   }
 
-  const closeList = () => {
-    if (!listType) return
-    htmlParts.push(`</${listType}>`)
-    listType = null
-  }
-
-  lines.forEach((line) => {
-    const trimmed = line.trim()
-    if (!trimmed) {
-      flushParagraph()
-      closeList()
-      return
-    }
-
-    const headingMatch = trimmed.match(/^(#{1,3})\s+(.+)$/)
-    if (headingMatch) {
-      flushParagraph()
-      closeList()
-      const level = headingMatch[1].length
-      const content = applyInlineFormatting(headingMatch[2])
-      htmlParts.push(`<h${level}>${content}</h${level}>`)
-      return
-    }
-
-    const unorderedMatch = trimmed.match(/^[-*]\s+(.+)$/)
-    if (unorderedMatch) {
-      flushParagraph()
-      if (listType !== "ul") {
-        closeList()
-        listType = "ul"
-        htmlParts.push("<ul>")
-      }
-      htmlParts.push(`<li>${applyInlineFormatting(unorderedMatch[1])}</li>`)
-      return
-    }
-
-    const orderedMatch = trimmed.match(/^\d+[.)]\s+(.+)$/)
-    if (orderedMatch) {
-      flushParagraph()
-      if (listType !== "ol") {
-        closeList()
-        listType = "ol"
-        htmlParts.push("<ol>")
-      }
-      htmlParts.push(`<li>${applyInlineFormatting(orderedMatch[1])}</li>`)
-      return
-    }
-
-    closeList()
-    paragraphLines.push(line)
-  })
-
-  flushParagraph()
-  closeList()
-
-  return htmlParts.join("")
+  return (
+    <NodeViewWrapper
+      as="span"
+      className={`tiptap-footnote ${selected ? "is-selected" : ""}`}
+      data-footnote={text ?? ""}
+      contentEditable={false}
+    >
+      <button type="button" className="tiptap-footnote__badge" onClick={editFootnote}>
+        {label ?? "¹"}
+      </button>
+    </NodeViewWrapper>
+  )
 }
 
-const getClipboardHtml = (event: ClipboardEvent<HTMLDivElement>) => {
-  const html = event.clipboardData?.getData("text/html")?.trim()
-  if (!html) return null
-  const parsed = new DOMParser().parseFromString(html, "text/html")
-  const bodyHtml = parsed.body?.innerHTML.trim()
-  return bodyHtml || null
+function MediaControls({
+  align,
+  onAlignChange,
+  width,
+  onWidthChange,
+  onSelect,
+}: {
+  align: MediaAlign
+  onAlignChange: (value: MediaAlign) => void
+  width: number
+  onWidthChange: (value: number) => void
+  onSelect?: () => void
+}) {
+  return (
+    <div className="tiptap-media__controls" contentEditable={false}>
+      <button
+        type="button"
+        className="tiptap-media__drag"
+        data-drag-handle
+        draggable
+        title="Перетащить"
+        onMouseDown={(event) => {
+          event.preventDefault()
+          onSelect?.()
+        }}
+      >
+        ⋮⋮
+      </button>
+      <div className="tiptap-media__align">
+        <button
+          type="button"
+          className={align === "left" ? "is-active" : ""}
+          onClick={() => onAlignChange("left")}
+          title="Выравнивание влево"
+        >
+          <AlignLeft size={14} />
+        </button>
+        <button
+          type="button"
+          className={align === "center" ? "is-active" : ""}
+          onClick={() => onAlignChange("center")}
+          title="По центру"
+        >
+          <AlignCenter size={14} />
+        </button>
+        <button
+          type="button"
+          className={align === "right" ? "is-active" : ""}
+          onClick={() => onAlignChange("right")}
+          title="Выравнивание вправо"
+        >
+          <AlignRight size={14} />
+        </button>
+      </div>
+      <div className="tiptap-media__width">
+        <input
+          type="range"
+          min={40}
+          max={100}
+          step={5}
+          value={width}
+          onChange={(event) => onWidthChange(Number(event.target.value))}
+        />
+        <span>{width}%</span>
+      </div>
+    </div>
+  )
 }
 
 export function RichTextEditor({
   value,
   onChange,
-  placeholder,
+  placeholder = "Начните писать...",
   onUploadMedia,
   disabled,
   id,
 }: RichTextEditorProps) {
-  const editorRef = useRef<HTMLDivElement | null>(null)
   const imageInputRef = useRef<HTMLInputElement | null>(null)
   const videoInputRef = useRef<HTMLInputElement | null>(null)
-  const draggedMediaRef = useRef<HTMLElement | null>(null)
-  const [isFocused, setIsFocused] = useState(false)
-  const [selectedFontFamily, setSelectedFontFamily] = useState("inherit")
-  const [selectedFontSize, setSelectedFontSize] = useState("inherit")
-  const [selectedLineHeight, setSelectedLineHeight] = useState("normal")
-  const [selectedMedia, setSelectedMedia] = useState<HTMLElement | null>(null)
-  const [selectedMediaWidth, setSelectedMediaWidth] = useState(100)
+  const [isUploading, setIsUploading] = useState(false)
 
-  const fontFamilies = useMemo(
-    () => [
-      { label: "Сайт (по умолчанию)", value: "inherit" },
-      { label: "Inter", value: "Inter, sans-serif" },
-      { label: "Montserrat", value: "Montserrat, sans-serif" },
-      { label: "Arial", value: "Arial, sans-serif" },
-      { label: "Georgia", value: "Georgia, serif" },
-      { label: "Times New Roman", value: "'Times New Roman', serif" },
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        heading: { levels: [1, 2, 3] },
+      }),
+      UnderlineExtension,
+      Link.configure({
+        openOnClick: false,
+        autolink: true,
+        linkOnPaste: true,
+        HTMLAttributes: {
+          rel: "noopener noreferrer",
+          target: "_blank",
+        },
+      }),
+      TextAlign.configure({ types: ["heading", "paragraph"] }),
+      Placeholder.configure({ placeholder }),
+      Dropcursor.configure({ color: "#f97316", width: 2 }),
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableHeader,
+      TableCell,
+      ImageBlock,
+      VideoBlock,
+      Footnote,
     ],
-    [],
-  )
-
-  const fontSizes = useMemo(
-    () => [
-      { label: "По умолчанию", value: "inherit" },
-      { label: "12 px", value: "12px" },
-      { label: "14 px", value: "14px" },
-      { label: "16 px", value: "16px" },
-      { label: "18 px", value: "18px" },
-      { label: "20 px", value: "20px" },
-      { label: "24 px", value: "24px" },
-      { label: "28 px", value: "28px" },
-      { label: "32 px", value: "32px" },
-    ],
-    [],
-  )
-
-  const lineHeights = useMemo(
-    () => [
-      { label: "По умолчанию", value: "normal" },
-      { label: "1.2", value: "1.2" },
-      { label: "1.4", value: "1.4" },
-      { label: "1.6", value: "1.6" },
-      { label: "1.8", value: "1.8" },
-      { label: "2.0", value: "2" },
-    ],
-    [],
-  )
-
-  useEffect(() => {
-    if (!editorRef.current) return
-    const currentHtml = editorRef.current.innerHTML
-    if (value !== currentHtml) {
-      editorRef.current.innerHTML = value
-    }
-  }, [value])
-
-  useEffect(() => {
-    const handleSelectionChange = () => {
-      const selection = window.getSelection()
-      if (!selection || !editorRef.current || selection.rangeCount === 0) {
-        setSelectedMedia(null)
-        return
-      }
-      const node = selection.anchorNode
-      const element = node instanceof Element ? node : node?.parentElement
-      if (!element || !editorRef.current.contains(element)) {
-        setSelectedMedia(null)
-        return
-      }
-      const media = element.closest("img, video")
-      setSelectedMedia(media instanceof HTMLElement ? media : null)
-    }
-
-    document.addEventListener("selectionchange", handleSelectionChange)
-    return () => document.removeEventListener("selectionchange", handleSelectionChange)
-  }, [])
-
-  useEffect(() => {
-    if (!selectedMedia || selectedMedia.tagName.toLowerCase() !== "img") {
-      setSelectedMediaWidth(100)
-      return
-    }
-    const storedWidth = selectedMedia.getAttribute("data-media-width")
-    if (storedWidth) {
-      const parsed = Number.parseFloat(storedWidth)
-      if (!Number.isNaN(parsed)) {
-        setSelectedMediaWidth(Math.min(100, Math.max(20, parsed)))
-        return
-      }
-    }
-    const widthValue = selectedMedia.style.width
-    if (widthValue.endsWith("%")) {
-      const parsed = Number.parseFloat(widthValue)
-      if (!Number.isNaN(parsed)) {
-        setSelectedMediaWidth(Math.min(100, Math.max(20, parsed)))
-        return
-      }
-    }
-    setSelectedMediaWidth(100)
-  }, [selectedMedia])
-
-  const handleInput = useCallback(() => {
-    onChange(editorRef.current?.innerHTML ?? "")
-  }, [onChange])
-
-  const insertHtmlAfterSelection = useCallback(
-    (html: string) => {
-      const selection = window.getSelection()
-      if (!selection || !editorRef.current) return
-      if (selection.rangeCount === 0) {
-        editorRef.current.innerHTML += html
-        handleInput()
-        return
-      }
-      const range = selection.getRangeAt(0)
-      range.collapse(false)
-      const htmlWithMarker = `${html}<span data-cursor-marker="true"></span>`
-      const fragment = range.createContextualFragment(htmlWithMarker)
-      range.insertNode(fragment)
-      const marker = editorRef.current.querySelector('[data-cursor-marker="true"]')
-      if (marker) {
-        const newRange = document.createRange()
-        newRange.setStartAfter(marker)
-        newRange.collapse(true)
-        selection.removeAllRanges()
-        selection.addRange(newRange)
-        marker.remove()
-      }
-      editorRef.current.focus()
-      handleInput()
+    content: value || "<p></p>",
+    editable: !disabled,
+    onUpdate: ({ editor: currentEditor }) => {
+      onChange(currentEditor.getHTML())
     },
-    [handleInput]
-  )
-
-  const handleCommand = useCallback((command: string, commandValue?: string) => {
-    document.execCommand(command, false, commandValue)
-    editorRef.current?.focus()
-    handleInput()
-  }, [handleInput])
-
-  const wrapSelectionWithSpan = useCallback(
-    (style: string) => {
-      const selection = window.getSelection()
-      if (!selection || !editorRef.current) return
-      if (selection.rangeCount === 0) return
-      const range = selection.getRangeAt(0)
-      const span = document.createElement("span")
-      span.setAttribute("style", style)
-      if (range.collapsed) {
-        span.appendChild(document.createTextNode("\u200b"))
-        range.insertNode(span)
-        const newRange = document.createRange()
-        newRange.setStart(span.firstChild ?? span, 1)
-        newRange.collapse(true)
-        selection.removeAllRanges()
-        selection.addRange(newRange)
-        editorRef.current.focus()
-        handleInput()
-        return
-      }
-      try {
-        range.surroundContents(span)
-      } catch {
-        const fragment = range.extractContents()
-        span.appendChild(fragment)
-        range.insertNode(span)
-      }
-      const newRange = document.createRange()
-      newRange.setStartAfter(span)
-      newRange.collapse(true)
-      selection.removeAllRanges()
-      selection.addRange(newRange)
-      editorRef.current.focus()
-      handleInput()
+    editorProps: {
+      attributes: {
+        class: "tiptap-editor__content",
+      },
+      handleDrop: (view, event, _slice, moved) => {
+        if (moved) return false
+        const files = event.dataTransfer?.files
+        if (!files || files.length === 0) return false
+        const [file] = Array.from(files)
+        if (!file) return false
+        const insertNode = async (type: "image" | "video") => {
+          setIsUploading(true)
+          const url = await onUploadMedia(file)
+          setIsUploading(false)
+          if (!url) return
+          const nodeType = type === "image" ? "imageBlock" : "videoBlock"
+          const node = view.state.schema.nodes[nodeType]?.create({
+            src: url,
+            align: "center",
+            width: 100,
+            caption: "",
+          })
+          if (!node) return
+          const transaction = view.state.tr.replaceSelectionWith(node)
+          view.dispatch(transaction.scrollIntoView())
+        }
+        if (file.type.startsWith("image/")) {
+          void insertNode("image")
+          return true
+        }
+        if (file.type.startsWith("video/")) {
+          void insertNode("video")
+          return true
+        }
+        return false
+      },
     },
-    [handleInput],
-  )
+  })
 
-  const applyLineHeight = useCallback(
-    (value: string) => {
-      const selection = window.getSelection()
-      if (!selection || !editorRef.current) return
-      const node = selection.anchorNode
-      const element = node instanceof Element ? node : node?.parentElement
-      const blockElement =
-        element?.closest("p, div, h1, h2, h3, h4, h5, h6, li, blockquote") ?? editorRef.current
-      blockElement.style.lineHeight = value
-      editorRef.current.focus()
-      handleInput()
-    },
-    [handleInput],
-  )
-
-  const handlePaste = useCallback(
-    (event: ClipboardEvent<HTMLDivElement>) => {
-      const html = getClipboardHtml(event)
-      if (html) {
-        event.preventDefault()
-        insertHtmlAfterSelection(html)
-        return
-      }
-
-      const text = event.clipboardData?.getData("text/plain")
-      if (!text) return
-      event.preventDefault()
-      const normalized = text.replace(/\r\n/g, "\n").trim()
-      const markdownHtml = markdownToHtml(normalized)
-      insertHtmlAfterSelection(markdownHtml)
-    },
-    [insertHtmlAfterSelection],
-  )
-
-  const applyResponsiveLayout = useCallback(() => {
-    if (!editorRef.current) return
-    const parser = new DOMParser()
-    const doc = parser.parseFromString(editorRef.current.innerHTML, "text/html")
-    const mediaNodes = doc.querySelectorAll("img, video")
-    mediaNodes.forEach((node) => {
-      const element = node as HTMLElement
-      const inGallery = Boolean(element.closest(".blog-gallery"))
-      const inSplitMedia = Boolean(element.closest(".blog-split__media"))
-      element.style.maxWidth = "100%"
-      element.style.height = "auto"
-      element.style.display = "block"
-      element.style.margin = inGallery || inSplitMedia ? "0" : "16px 0"
-      element.style.objectFit = "contain"
-      if (element.tagName.toLowerCase() === "img" && !element.style.width) {
-        element.style.width = inGallery || inSplitMedia ? "100%" : "100%"
-      }
-      if (element.tagName.toLowerCase() === "video") {
-        element.style.width = "100%"
-      }
-      element.setAttribute("draggable", "true")
-      element.setAttribute("data-media", "true")
-    })
-
-    const textBlocks = doc.querySelectorAll("p, h1, h2, h3, h4, h5, h6, li, blockquote")
-    textBlocks.forEach((node) => {
-      const element = node as HTMLElement
-      element.style.overflowWrap = "anywhere"
-      element.style.wordBreak = "break-word"
-    })
-
-    const updatedHtml = doc.body.innerHTML
-    editorRef.current.innerHTML = updatedHtml
-    onChange(updatedHtml)
-  }, [onChange])
-
-  const applyMediaWidth = useCallback(
-    (value: number) => {
-      if (!selectedMedia || selectedMedia.tagName.toLowerCase() !== "img") return
-      const nextValue = Math.min(100, Math.max(20, value))
-      selectedMedia.style.width = `${nextValue}%`
-      selectedMedia.style.height = "auto"
-      selectedMedia.style.maxWidth = "100%"
-      selectedMedia.setAttribute("data-media-width", `${nextValue}`)
-      setSelectedMediaWidth(nextValue)
-      handleInput()
-    },
-    [handleInput, selectedMedia],
-  )
-
-  const adjustMediaWidth = useCallback(
-    (delta: number) => {
-      if (!selectedMedia || selectedMedia.tagName.toLowerCase() !== "img") return
-      applyMediaWidth(selectedMediaWidth + delta)
-    },
-    [applyMediaWidth, selectedMedia, selectedMediaWidth],
-  )
-
-  const insertMediaInLayout = useCallback(
-    (html: string) => {
-      const selection = window.getSelection()
-      if (!selection || !editorRef.current) {
-        insertHtmlAfterSelection(html)
-        return
-      }
-      const node = selection.anchorNode
-      const element = node instanceof Element ? node : node?.parentElement
-      const gallery = element?.closest(".blog-gallery")
-      if (gallery) {
-        gallery.querySelector(".blog-gallery__placeholder")?.remove()
-        gallery.insertAdjacentHTML("beforeend", html)
-        handleInput()
-        return
-      }
-      const splitMedia = element?.closest(".blog-split__media")
-      if (splitMedia) {
-        splitMedia.innerHTML = html
-        handleInput()
-        return
-      }
-      insertHtmlAfterSelection(html)
-    },
-    [handleInput, insertHtmlAfterSelection],
-  )
-
-  const handleMediaUpload = useCallback(
+  const uploadAndInsert = useCallback(
     async (file: File, type: "image" | "video") => {
+      if (!editor) return
+      setIsUploading(true)
       const url = await onUploadMedia(file)
+      setIsUploading(false)
       if (!url) return
-      if (type === "image") {
-        insertMediaInLayout(
-          `<img src="${url}" alt="Медиа" draggable="true" data-media="true" style="max-width: 100%; height: auto; display: block; margin: 16px 0; object-fit: contain;" />`,
-        )
-        return
-      }
-      insertMediaInLayout(
-        `<video src="${url}" controls draggable="true" data-media="true" style="max-width: 100%; width: 100%; height: auto; display: block; margin: 16px 0; object-fit: contain;"></video>`,
-      )
+      const nodeType = type === "image" ? "imageBlock" : "videoBlock"
+      editor
+        .chain()
+        .focus()
+        .insertContent({
+          type: nodeType,
+          attrs: { src: url, align: "center", width: 100, caption: "" },
+        })
+        .run()
     },
-    [insertMediaInLayout, onUploadMedia]
+    [editor, onUploadMedia],
   )
 
-  const handleImageChange = useCallback(
-    async (event: ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0]
-      if (!file) return
-      await handleMediaUpload(file, "image")
-      event.target.value = ""
-    },
-    [handleMediaUpload]
-  )
+  useEffect(() => {
+    if (!editor) return
+    editor.setEditable(!disabled)
+  }, [editor, disabled])
 
-  const handleVideoChange = useCallback(
-    async (event: ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0]
-      if (!file) return
-      await handleMediaUpload(file, "video")
-      event.target.value = ""
-    },
-    [handleMediaUpload]
-  )
+  useEffect(() => {
+    if (!editor) return
+    const html = editor.getHTML()
+    if (value !== html) {
+      editor.commands.setContent(value || "<p></p>", false)
+    }
+  }, [editor, value])
 
-  const moveSelectedMedia = useCallback(
-    (direction: "up" | "down") => {
-      if (!selectedMedia) return
-      const mediaElement = selectedMedia
-      const blockElement =
-        mediaElement.closest("p, div, h1, h2, h3, h4, h5, h6, li, blockquote") ?? mediaElement
-      const parent = blockElement.parentElement
-      if (!parent) return
-      const sibling = direction === "up" ? blockElement.previousElementSibling : blockElement.nextElementSibling
-      if (!sibling) return
-      if (direction === "up") {
-        parent.insertBefore(blockElement, sibling)
-      } else {
-        parent.insertBefore(blockElement, sibling.nextElementSibling)
-      }
-      editorRef.current?.focus()
-      handleInput()
-    },
-    [handleInput, selectedMedia]
-  )
-
-  const handleDragStart = useCallback((event: React.DragEvent<HTMLDivElement>) => {
-    const target = event.target as HTMLElement | null
-    if (!target) return
-    const media = target.closest("img, video")
-    if (!media || !editorRef.current?.contains(media)) return
-    draggedMediaRef.current = media as HTMLElement
-    event.dataTransfer.effectAllowed = "move"
-    event.dataTransfer.setData("text/plain", "media")
-  }, [])
-
-  const handleDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
-    if (!draggedMediaRef.current) return
-    event.preventDefault()
-    event.dataTransfer.dropEffect = "move"
-  }, [])
-
-  const handleDrop = useCallback(
-    (event: React.DragEvent<HTMLDivElement>) => {
-      const dragged = draggedMediaRef.current
-      if (!dragged || !editorRef.current) return
-      event.preventDefault()
-      const target = event.target as HTMLElement | null
-      if (!target || !editorRef.current.contains(target)) {
-        editorRef.current.appendChild(dragged)
-        handleInput()
-        draggedMediaRef.current = null
-        return
-      }
-      const gallery = target.closest(".blog-gallery")
-      if (gallery && editorRef.current.contains(gallery)) {
-        gallery.querySelector(".blog-gallery__placeholder")?.remove()
-        gallery.appendChild(dragged)
-        handleInput()
-        draggedMediaRef.current = null
-        return
-      }
-      const splitMedia = target.closest(".blog-split__media")
-      if (splitMedia && editorRef.current.contains(splitMedia)) {
-        splitMedia.innerHTML = ""
-        splitMedia.appendChild(dragged)
-        handleInput()
-        draggedMediaRef.current = null
-        return
-      }
-      const dropTarget = target.closest("img, video, p, h1, h2, h3, h4, h5, h6, li, blockquote, div")
-      if (!dropTarget || dropTarget === dragged) {
-        editorRef.current.appendChild(dragged)
-        handleInput()
-        draggedMediaRef.current = null
-        return
-      }
-      const rect = dropTarget.getBoundingClientRect()
-      const insertBefore = event.clientY < rect.top + rect.height / 2
-      if (insertBefore) {
-        dropTarget.parentElement?.insertBefore(dragged, dropTarget)
-      } else {
-        dropTarget.parentElement?.insertBefore(dragged, dropTarget.nextSibling)
-      }
-      handleInput()
-      draggedMediaRef.current = null
-    },
-    [handleInput]
-  )
-
-  const handleDragEnd = useCallback(() => {
-    draggedMediaRef.current = null
-  }, [])
-
-  const handleEditorClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
-    const target = event.target as HTMLElement | null
-    if (!target || !editorRef.current?.contains(target)) {
-      setSelectedMedia(null)
+  const setLink = useCallback(() => {
+    if (!editor) return
+    const previousUrl = editor.getAttributes("link").href as string | undefined
+    const url = window.prompt("Ссылка", previousUrl ?? "")
+    if (url === null) return
+    if (!url) {
+      editor.chain().focus().extendMarkRange("link").unsetLink().run()
       return
     }
-    const media = target.closest("img, video")
-    setSelectedMedia(media instanceof HTMLElement ? media : null)
-  }, [])
+    editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run()
+  }, [editor])
 
-  const insertSplitLayout = useCallback(
-    (position: "media-left" | "media-right") => {
-      if (!editorRef.current) return
-      const mediaHtml = selectedMedia ? selectedMedia.outerHTML : HTML_PLACEHOLDERS.splitMedia
-      if (selectedMedia) {
-        selectedMedia.remove()
-      }
-      const mediaBlock = `<div class="blog-split__media">${mediaHtml}</div>`
-      const textBlock = HTML_PLACEHOLDERS.splitText
-      const layoutHtml =
-        position === "media-left"
-          ? `<div class="blog-split blog-split--media-left" data-layout="split">${mediaBlock}${textBlock}</div>`
-          : `<div class="blog-split blog-split--media-right" data-layout="split">${textBlock}${mediaBlock}</div>`
-      insertHtmlAfterSelection(layoutHtml)
-    },
-    [insertHtmlAfterSelection, selectedMedia],
-  )
+  const insertFootnote = useCallback(() => {
+    if (!editor) return
+    const text = window.prompt("Текст сноски", "")
+    if (text === null) return
+    const label = window.prompt("Метка", FOOTNOTE_SYMBOLS[Math.floor(Math.random() * FOOTNOTE_SYMBOLS.length)] ?? "¹")
+    if (label === null) return
+    editor.chain().focus().insertContent({ type: "footnote", attrs: { text, label: label || "¹" } }).run()
+  }, [editor])
 
-  const insertGalleryLayout = useCallback(() => {
-    if (!editorRef.current) return
-    const layoutHtml = `<div class="blog-gallery" data-layout="gallery">${HTML_PLACEHOLDERS.gallery}</div>`
-    insertHtmlAfterSelection(layoutHtml)
-  }, [insertHtmlAfterSelection])
+  const handleImageInput = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      await uploadAndInsert(file, "image")
+      event.target.value = ""
+    }
+  }
+
+  const handleVideoInput = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      await uploadAndInsert(file, "video")
+      event.target.value = ""
+    }
+  }
+
+  const mediaStatus = isUploading ? "Загрузка медиа..." : ""
 
   return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-2 rounded-md border bg-white p-2">
-        <select
-          value={selectedFontFamily}
-          onChange={(event) => {
-            const value = event.target.value
-            setSelectedFontFamily(value)
-            wrapSelectionWithSpan(`font-family: ${value};`)
-          }}
-          className="h-9 rounded-md border border-input bg-background px-2 text-sm"
-          disabled={disabled}
-        >
-          {fontFamilies.map((font) => (
-            <option key={font.value} value={font.value}>
-              {font.label}
-            </option>
-          ))}
-        </select>
-        <select
-          value={selectedFontSize}
-          onChange={(event) => {
-            const value = event.target.value
-            setSelectedFontSize(value)
-            wrapSelectionWithSpan(`font-size: ${value};`)
-          }}
-          className="h-9 rounded-md border border-input bg-background px-2 text-sm"
-          disabled={disabled}
-        >
-          {fontSizes.map((size) => (
-            <option key={size.value} value={size.value}>
-              {size.label}
-            </option>
-          ))}
-        </select>
-        <select
-          value={selectedLineHeight}
-          onChange={(event) => {
-            const value = event.target.value
-            setSelectedLineHeight(value)
-            applyLineHeight(value)
-          }}
-          className="h-9 rounded-md border border-input bg-background px-2 text-sm"
-          disabled={disabled}
-        >
-          {lineHeights.map((height) => (
-            <option key={height.value} value={height.value}>
-              {height.label}
-            </option>
-          ))}
-        </select>
-        <Button type="button" variant="outline" size="sm" onClick={() => handleCommand("bold")} disabled={disabled}>
-          <Bold className="h-4 w-4" />
-        </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => handleCommand("italic")} disabled={disabled}>
-          <Italic className="h-4 w-4" />
-        </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => handleCommand("underline")} disabled={disabled}>
-          <Underline className="h-4 w-4" />
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => handleCommand("justifyLeft")}
-          disabled={disabled}
-        >
-          <AlignLeft className="h-4 w-4" />
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => handleCommand("justifyCenter")}
-          disabled={disabled}
-        >
-          <AlignCenter className="h-4 w-4" />
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => handleCommand("justifyRight")}
-          disabled={disabled}
-        >
-          <AlignRight className="h-4 w-4" />
-        </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => formatBlock("h2")} disabled={disabled}>
-          <Heading2 className="h-4 w-4" />
-        </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => formatBlock("h3")} disabled={disabled}>
-          <Heading3 className="h-4 w-4" />
-        </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => formatBlock("p")} disabled={disabled}>
-          Текст
-        </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => handleCommand("insertUnorderedList")} disabled={disabled}>
-          <List className="h-4 w-4" />
-        </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => handleCommand("insertOrderedList")} disabled={disabled}>
-          <ListOrdered className="h-4 w-4" />
-        </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => handleCommand("indent")} disabled={disabled}>
-          <Indent className="h-4 w-4" />
-        </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => handleCommand("outdent")} disabled={disabled}>
-          <Outdent className="h-4 w-4" />
-        </Button>
-        <input
-          ref={imageInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={handleImageChange}
-          disabled={disabled}
-        />
-        <input
-          ref={videoInputRef}
-          type="file"
-          accept="video/*"
-          className="hidden"
-          onChange={handleVideoChange}
-          disabled={disabled}
-        />
-        <Button type="button" variant="outline" size="sm" onClick={() => imageInputRef.current?.click()} disabled={disabled}>
-          <ImageIcon className="h-4 w-4 mr-1" />
-          Фото
-        </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => videoInputRef.current?.click()} disabled={disabled}>
-          <Video className="h-4 w-4 mr-1" />
-          Видео
-        </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => insertSplitLayout("media-left")} disabled={disabled}>
-          Фото слева
-        </Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => insertSplitLayout("media-right")} disabled={disabled}>
-          Фото справа
-        </Button>
-        <Button type="button" variant="outline" size="sm" onClick={insertGalleryLayout} disabled={disabled}>
-          Галерея
-        </Button>
-        <Button type="button" variant="outline" size="sm" onClick={applyResponsiveLayout} disabled={disabled}>
-          <Smartphone className="h-4 w-4 mr-1" />
-          Автоподгонка
-        </Button>
-        <div className="flex items-center gap-2 rounded-md border border-input bg-white px-2 py-1 text-sm">
-          <span className="text-xs text-gray-500">Размер фото</span>
+    <div className="space-y-3" id={id}>
+      <div className="flex flex-wrap gap-2 rounded-lg border border-input bg-muted/40 p-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             size="sm"
-            onClick={() => adjustMediaWidth(-10)}
-            disabled={disabled || !selectedMedia || selectedMedia.tagName.toLowerCase() !== "img"}
+            onClick={() => editor?.chain().focus().toggleBold().run()}
+            disabled={!editor}
+            className={editor?.isActive("bold") ? "bg-muted" : ""}
           >
-            <Minus className="h-4 w-4" />
+            <Bold className="h-4 w-4" />
           </Button>
-          <input
-            type="range"
-            min={20}
-            max={100}
-            step={5}
-            value={selectedMediaWidth}
-            onChange={(event) => applyMediaWidth(Number(event.target.value))}
-            className="w-24 accent-orange-500"
-            disabled={disabled || !selectedMedia || selectedMedia.tagName.toLowerCase() !== "img"}
-          />
-          <span className="text-xs text-gray-500">{selectedMediaWidth}%</span>
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             size="sm"
-            onClick={() => adjustMediaWidth(10)}
-            disabled={disabled || !selectedMedia || selectedMedia.tagName.toLowerCase() !== "img"}
+            onClick={() => editor?.chain().focus().toggleItalic().run()}
+            disabled={!editor}
+            className={editor?.isActive("italic") ? "bg-muted" : ""}
+          >
+            <Italic className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => editor?.chain().focus().toggleUnderline().run()}
+            disabled={!editor}
+            className={editor?.isActive("underline") ? "bg-muted" : ""}
+          >
+            <Underline className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={setLink}
+            disabled={!editor}
+            className={editor?.isActive("link") ? "bg-muted" : ""}
+          >
+            <LinkIcon className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
+            disabled={!editor}
+            className={editor?.isActive("heading", { level: 2 }) ? "bg-muted" : ""}
+          >
+            <Heading2 className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => editor?.chain().focus().toggleHeading({ level: 3 }).run()}
+            disabled={!editor}
+            className={editor?.isActive("heading", { level: 3 }) ? "bg-muted" : ""}
+          >
+            <Heading3 className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => editor?.chain().focus().toggleBulletList().run()}
+            disabled={!editor}
+            className={editor?.isActive("bulletList") ? "bg-muted" : ""}
+          >
+            <List className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+            disabled={!editor}
+            className={editor?.isActive("orderedList") ? "bg-muted" : ""}
+          >
+            <ListOrdered className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => editor?.chain().focus().toggleBlockquote().run()}
+            disabled={!editor}
+            className={editor?.isActive("blockquote") ? "bg-muted" : ""}
+          >
+            <Quote className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => editor?.chain().focus().setTextAlign("left").run()}
+            disabled={!editor}
+            className={editor?.isActive({ textAlign: "left" }) ? "bg-muted" : ""}
+          >
+            <AlignLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => editor?.chain().focus().setTextAlign("center").run()}
+            disabled={!editor}
+            className={editor?.isActive({ textAlign: "center" }) ? "bg-muted" : ""}
+          >
+            <AlignCenter className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => editor?.chain().focus().setTextAlign("right").run()}
+            disabled={!editor}
+            className={editor?.isActive({ textAlign: "right" }) ? "bg-muted" : ""}
+          >
+            <AlignRight className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="ghost" size="sm" onClick={() => imageInputRef.current?.click()}>
+            <ImageIcon className="h-4 w-4" />
+          </Button>
+          <Button type="button" variant="ghost" size="sm" onClick={() => videoInputRef.current?.click()}>
+            <Video className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+            disabled={!editor}
+          >
+            <TableIcon className="h-4 w-4" />
+          </Button>
+          <Button type="button" variant="ghost" size="sm" onClick={insertFootnote} disabled={!editor}>
+            <span className="text-xs">Сноска</span>
+          </Button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => editor?.chain().focus().addColumnBefore().run()}
+            disabled={!editor?.can().addColumnBefore()}
           >
             <Plus className="h-4 w-4" />
           </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => editor?.chain().focus().deleteColumn().run()}
+            disabled={!editor?.can().deleteColumn()}
+          >
+            <Minus className="h-4 w-4" />
+          </Button>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => moveSelectedMedia("up")}
-          disabled={disabled || !selectedMedia}
-        >
-          <ArrowUp className="h-4 w-4 mr-1" />
-          Медиа вверх
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => moveSelectedMedia("down")}
-          disabled={disabled || !selectedMedia}
-        >
-          <ArrowDown className="h-4 w-4 mr-1" />
-          Медиа вниз
-        </Button>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button type="button" variant="outline" size="sm" disabled={disabled}>
-              <Eye className="h-4 w-4 mr-1" />
-              Предпросмотр
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-3xl">
-            <DialogHeader>
-              <DialogTitle>Предпросмотр публикации</DialogTitle>
-              <DialogDescription>Так пост будет выглядеть на сайте.</DialogDescription>
-            </DialogHeader>
-            <div
-              className="blog-content max-h-[60vh] overflow-auto rounded-md border bg-white p-4 text-sm leading-relaxed [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:text-lg [&_h3]:font-semibold [&_p]:mb-4 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_img]:rounded-md"
-              dangerouslySetInnerHTML={{ __html: value || "<p>Текст пока не добавлен.</p>" }}
-            />
-          </DialogContent>
-        </Dialog>
+        {mediaStatus && <div className="text-xs text-orange-600">{mediaStatus}</div>}
       </div>
-      <div className="relative">
-        {!value && !isFocused && (
-          <div className="pointer-events-none absolute left-3 top-3 text-sm text-gray-400">
-            {placeholder ?? "Введите текст"}
-          </div>
-        )}
-        <div
-          ref={editorRef}
-          id={id}
-          contentEditable={!disabled}
-          onInput={handleInput}
-          onPaste={handlePaste}
-          onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-          onDragEnd={handleDragEnd}
-          onClick={handleEditorClick}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
-          aria-label={placeholder ?? "Текст"}
-          className="min-h-[200px] rounded-md border border-input bg-white px-3 py-2 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-orange-500"
-        />
+
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleImageInput}
+        disabled={disabled || isUploading}
+      />
+      <input
+        ref={videoInputRef}
+        type="file"
+        accept="video/*"
+        className="hidden"
+        onChange={handleVideoInput}
+        disabled={disabled || isUploading}
+      />
+
+      <div className={`tiptap-editor ${disabled ? "opacity-70" : ""}`}>
+        <EditorContent editor={editor} />
       </div>
     </div>
   )
