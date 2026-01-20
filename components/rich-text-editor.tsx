@@ -55,6 +55,7 @@ type MediaAlign = "left" | "center" | "right"
 const FOOTNOTE_SYMBOLS = ["¹", "²", "³", "⁴", "⁵", "⁶"]
 const DEFAULT_LINE_HEIGHT = "1.6"
 const LINE_HEIGHT_OPTIONS = ["1.2", "1.4", "1.6", "1.8", "2.0"]
+const SPACING_OPTIONS = ["0", "0.5rem", "1rem", "1.5rem", "2rem", "3rem"]
 const DEFAULT_MEDIA_WIDTH = 70
 const FONT_SIZE_OPTIONS = ["12px", "14px", "16px", "18px", "20px", "24px", "28px", "32px"]
 
@@ -132,6 +133,46 @@ const LineHeight = Extension.create({
         () =>
         ({ commands }) =>
           this.options.types.every((type) => commands.updateAttributes(type, { lineHeight: null })),
+    }
+  },
+})
+
+const BlockSpacing = Extension.create({
+  name: "blockSpacing",
+  addOptions() {
+    return {
+      types: ["paragraph", "heading", "listItem"],
+    }
+  },
+  addGlobalAttributes() {
+    return [
+      {
+        types: this.options.types,
+        attributes: {
+          marginBottom: {
+            default: null,
+            parseHTML: (element) => element.style.marginBottom || null,
+            renderHTML: (attributes) => {
+              if (!attributes.marginBottom) {
+                return {}
+              }
+              return { style: `margin-bottom: ${attributes.marginBottom}` }
+            },
+          },
+        },
+      },
+    ]
+  },
+  addCommands() {
+    return {
+      setBlockSpacing:
+        (marginBottom: string) =>
+        ({ commands }) =>
+          this.options.types.every((type) => commands.updateAttributes(type, { marginBottom })),
+      unsetBlockSpacing:
+        () =>
+        ({ commands }) =>
+          this.options.types.every((type) => commands.updateAttributes(type, { marginBottom: null })),
     }
   },
 })
@@ -598,6 +639,7 @@ export function RichTextEditor({
   const videoInputRef = useRef<HTMLInputElement | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [lineHeightValue, setLineHeightValue] = useState("default")
+  const [spacingValue, setSpacingValue] = useState("default")
   const [fontSizeValue, setFontSizeValue] = useState("default")
   const [textColor, setTextColor] = useState("#000000")
 
@@ -626,6 +668,7 @@ export function RichTextEditor({
       TableHeader,
       TableCell,
       LineHeight,
+      BlockSpacing,
       ImageBlock,
       VideoBlock,
       Footnote,
@@ -706,6 +749,14 @@ export function RichTextEditor({
         editor.getAttributes("paragraph").lineHeight ?? editor.getAttributes("heading").lineHeight ?? null
       setLineHeightValue(currentLineHeight ?? "default")
     }
+    const updateSpacingValue = () => {
+      const currentMarginBottom =
+        editor.getAttributes("paragraph").marginBottom ??
+        editor.getAttributes("heading").marginBottom ??
+        editor.getAttributes("listItem").marginBottom ??
+        null
+      setSpacingValue(currentMarginBottom ?? "default")
+    }
     const updateInlineStyleValues = () => {
       const currentFontSize = editor.getAttributes("textStyle").fontSize ?? null
       const currentColor = editor.getAttributes("textStyle").color ?? null
@@ -713,14 +764,19 @@ export function RichTextEditor({
       setTextColor(currentColor ?? "#000000")
     }
     updateLineHeightValue()
+    updateSpacingValue()
     updateInlineStyleValues()
     editor.on("selectionUpdate", updateLineHeightValue)
     editor.on("transaction", updateLineHeightValue)
+    editor.on("selectionUpdate", updateSpacingValue)
+    editor.on("transaction", updateSpacingValue)
     editor.on("selectionUpdate", updateInlineStyleValues)
     editor.on("transaction", updateInlineStyleValues)
     return () => {
       editor.off("selectionUpdate", updateLineHeightValue)
       editor.off("transaction", updateLineHeightValue)
+      editor.off("selectionUpdate", updateSpacingValue)
+      editor.off("transaction", updateSpacingValue)
       editor.off("selectionUpdate", updateInlineStyleValues)
       editor.off("transaction", updateInlineStyleValues)
     }
@@ -763,6 +819,16 @@ export function RichTextEditor({
       return
     }
     editor.chain().focus().setLineHeight(nextValue).run()
+  }
+
+  const handleSpacingChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    if (!editor) return
+    const nextValue = event.target.value
+    if (nextValue === "default") {
+      editor.chain().focus().unsetBlockSpacing().run()
+      return
+    }
+    editor.chain().focus().setBlockSpacing(nextValue).run()
   }
 
   const handleFontSizeChange = (event: ChangeEvent<HTMLSelectElement>) => {
@@ -1041,6 +1107,22 @@ export function RichTextEditor({
           >
             <option value="default">По умолчанию</option>
             {LINE_HEIGHT_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-slate-500">Отступ</span>
+          <select
+            className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+            value={spacingValue}
+            onChange={handleSpacingChange}
+            disabled={!editor}
+          >
+            <option value="default">По умолчанию</option>
+            {SPACING_OPTIONS.map((option) => (
               <option key={option} value={option}>
                 {option}
               </option>
