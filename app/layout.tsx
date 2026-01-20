@@ -4,6 +4,7 @@ import "./globals.css"
 import { montserrat, inter } from "./fonts"
 import { Toaster } from "@/components/toaster"
 import { MobileOptimization } from "@/components/mobile-optimization"
+import Script from "next/script"
 
 export const metadata: Metadata = {
   title: "Пополнение Alipay из России 2025 | Обмен рублей на юани | AlipayFast",
@@ -83,6 +84,7 @@ export default function RootLayout({
   return (
     <html lang="ru" className={`${montserrat.variable}`}>
       <head>
+        <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
         <link rel="canonical" href="https://alipayfast.ru" />
         <meta name="geo.region" content="RU-PRI" />
         <meta name="geo.placename" content="Владивосток, Приморский край" />

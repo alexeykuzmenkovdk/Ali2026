@@ -26,6 +26,10 @@ Continue building your app on:
 
 **[https://v0.app/chat/yKiwB6RxQwV](https://v0.app/chat/yKiwB6RxQwV)**
 
+## Telegram Mini App
+
+Инструкции по подключению Telegram Mini App: **[docs/telegram-mini-app.md](docs/telegram-mini-app.md)**
+
 ## How It Works
 
 1. Create and modify your project using [v0.app](https://v0.app)
