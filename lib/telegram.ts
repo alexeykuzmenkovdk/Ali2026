@@ -51,7 +51,10 @@ export function requireTelegramInitData(initData: string | null) {
     if (process.env.NODE_ENV === "production") return null
     return { user: { id: 0, username: "demo" } }
   }
-  if (!botToken) return null
+  if (!botToken) {
+    console.warn("[Telegram] Bot token missing, init data will not be validated.")
+    return getTelegramUser(initData)
+  }
   if (!validateInitData(initData, botToken)) {
     if (process.env.NODE_ENV === "production") return null
   }
