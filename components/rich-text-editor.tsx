@@ -58,6 +58,17 @@ const LINE_HEIGHT_OPTIONS = ["1.2", "1.4", "1.6", "1.8", "2.0"]
 const SPACING_OPTIONS = ["0", "0.5rem", "1rem", "1.5rem", "2rem", "3rem"]
 const DEFAULT_MEDIA_WIDTH = 70
 const FONT_SIZE_OPTIONS = ["12px", "14px", "16px", "18px", "20px", "24px", "28px", "32px"]
+const CTA_URL = "https://www.alipayfast.ru/#calculator"
+const CTA_LABEL = "Купить юани"
+
+const normalizeUrl = (value: string) => {
+  const trimmed = value.trim()
+  if (!trimmed) return ""
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed
+  }
+  return `https://${trimmed}`
+}
 
 const TextStyle = Mark.create({
   name: "textStyle",
@@ -655,6 +666,7 @@ export function RichTextEditor({
         openOnClick: false,
         autolink: true,
         linkOnPaste: true,
+        defaultProtocol: "https",
         HTMLAttributes: {
           rel: "noopener noreferrer",
           target: "_blank",
@@ -795,11 +807,36 @@ export function RichTextEditor({
     const previousUrl = editor.getAttributes("link").href as string | undefined
     const url = window.prompt("Ссылка", previousUrl ?? "")
     if (url === null) return
-    if (!url) {
+    const normalizedUrl = normalizeUrl(url)
+    if (!normalizedUrl) {
       editor.chain().focus().extendMarkRange("link").unsetLink().run()
       return
     }
-    editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run()
+    if (editor.state.selection.empty) {
+      const linkText = window.prompt("Текст ссылки", normalizedUrl)
+      if (linkText === null) return
+      const label = linkText.trim() || normalizedUrl
+      editor
+        .chain()
+        .focus()
+        .insertContent(
+          `<a href="${normalizedUrl}" target="_blank" rel="noopener noreferrer">${label}</a>`,
+        )
+        .run()
+      return
+    }
+    editor.chain().focus().extendMarkRange("link").setLink({ href: normalizedUrl }).run()
+  }, [editor])
+
+  const insertCtaButton = useCallback(() => {
+    if (!editor) return
+    editor
+      .chain()
+      .focus()
+      .insertContent(
+        `<p><a href="${CTA_URL}" class="cta-button" target="_blank" rel="noopener noreferrer">${CTA_LABEL}</a></p>`,
+      )
+      .run()
   }, [editor])
 
   const insertFootnote = useCallback(() => {
@@ -930,6 +967,9 @@ export function RichTextEditor({
             className={editor?.isActive("link") ? "bg-muted" : ""}
           >
             <LinkIcon className="h-4 w-4" />
+          </Button>
+          <Button type="button" variant="ghost" size="sm" onClick={insertCtaButton} disabled={!editor}>
+            <span className="text-xs font-semibold text-orange-600">Кнопка</span>
           </Button>
           <Button
             type="button"
