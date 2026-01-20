@@ -588,7 +588,7 @@
 
 .tiptap-editor__toolbar {
   position: sticky;
-  top: 0.75rem;
+  top: 4.75rem;
   z-index: 30;
   background: rgba(248, 250, 252, 0.95);
   backdrop-filter: blur(6px);

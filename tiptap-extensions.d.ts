@@ -6,5 +6,9 @@ declare module "@tiptap/core" {
       setLineHeight: (lineHeight: string) => ReturnType
       unsetLineHeight: () => ReturnType
     }
+    fontSize: {
+      setFontSize: (fontSize: string) => ReturnType
+      unsetFontSize: () => ReturnType
+    }
   }
 }
