@@ -429,3 +429,34 @@
   z-index: 100 !important;
   pointer-events: none !important;
 }
+
+.blog-content {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.blog-content * {
+  max-width: 100%;
+}
+
+.blog-content img,
+.blog-content video,
+.blog-content iframe {
+  height: auto;
+}
+
+.blog-content iframe {
+  width: 100%;
+}
+
+.blog-content table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.blog-content pre,
+.blog-content code {
+  max-width: 100%;
+  overflow-x: auto;
+}

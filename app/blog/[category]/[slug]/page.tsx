@@ -99,7 +99,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             ) : coverVideoSrc ? (
               <video src={coverVideoSrc} className="h-96 w-full object-cover" controls />
             ) : null}
-            <article className="px-6 py-8">
+            <article className="blog-content px-6 py-8">
               {renderContent(post.content) ?? (
                 <p className="text-base text-gray-700">Скоро здесь появится подробный текст публикации.</p>
               )}
