@@ -5,6 +5,8 @@ import {
   AlignCenter,
   AlignLeft,
   AlignRight,
+  ArrowDown,
+  ArrowUp,
   Bold,
   Eye,
   Heading2,
@@ -15,6 +17,7 @@ import {
   List,
   ListOrdered,
   Outdent,
+  Smartphone,
   Underline,
   Video,
 } from "lucide-react"
@@ -150,10 +153,12 @@ export function RichTextEditor({
   const editorRef = useRef<HTMLDivElement | null>(null)
   const imageInputRef = useRef<HTMLInputElement | null>(null)
   const videoInputRef = useRef<HTMLInputElement | null>(null)
+  const draggedMediaRef = useRef<HTMLElement | null>(null)
   const [isFocused, setIsFocused] = useState(false)
   const [selectedFontFamily, setSelectedFontFamily] = useState("inherit")
   const [selectedFontSize, setSelectedFontSize] = useState("inherit")
   const [selectedLineHeight, setSelectedLineHeight] = useState("normal")
+  const [selectedMedia, setSelectedMedia] = useState<HTMLElement | null>(null)
 
   const fontFamilies = useMemo(
     () => [
@@ -201,6 +206,27 @@ export function RichTextEditor({
       editorRef.current.innerHTML = value
     }
   }, [value])
+
+  useEffect(() => {
+    const handleSelectionChange = () => {
+      const selection = window.getSelection()
+      if (!selection || !editorRef.current || selection.rangeCount === 0) {
+        setSelectedMedia(null)
+        return
+      }
+      const node = selection.anchorNode
+      const element = node instanceof Element ? node : node?.parentElement
+      if (!element || !editorRef.current.contains(element)) {
+        setSelectedMedia(null)
+        return
+      }
+      const media = element.closest("img, video")
+      setSelectedMedia(media instanceof HTMLElement ? media : null)
+    }
+
+    document.addEventListener("selectionchange", handleSelectionChange)
+    return () => document.removeEventListener("selectionchange", handleSelectionChange)
+  }, [])
 
   const handleInput = useCallback(() => {
     onChange(editorRef.current?.innerHTML ?? "")
@@ -313,18 +339,49 @@ export function RichTextEditor({
     [insertHtmlAfterSelection],
   )
 
+  const applyResponsiveLayout = useCallback(() => {
+    if (!editorRef.current) return
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(editorRef.current.innerHTML, "text/html")
+    const mediaNodes = doc.querySelectorAll("img, video")
+    mediaNodes.forEach((node) => {
+      const element = node as HTMLElement
+      element.style.maxWidth = "100%"
+      element.style.height = "auto"
+      element.style.display = "block"
+      element.style.margin = "16px 0"
+      element.style.objectFit = "contain"
+      if (element.tagName.toLowerCase() === "video") {
+        element.style.width = "100%"
+      }
+      element.setAttribute("draggable", "true")
+      element.setAttribute("data-media", "true")
+    })
+
+    const textBlocks = doc.querySelectorAll("p, h1, h2, h3, h4, h5, h6, li, blockquote")
+    textBlocks.forEach((node) => {
+      const element = node as HTMLElement
+      element.style.overflowWrap = "anywhere"
+      element.style.wordBreak = "break-word"
+    })
+
+    const updatedHtml = doc.body.innerHTML
+    editorRef.current.innerHTML = updatedHtml
+    onChange(updatedHtml)
+  }, [onChange])
+
   const handleMediaUpload = useCallback(
     async (file: File, type: "image" | "video") => {
       const url = await onUploadMedia(file)
       if (!url) return
       if (type === "image") {
         insertHtmlAfterSelection(
-          `<img src="${url}" alt="Медиа" style="max-width: 100%; height: auto; display: block; margin: 16px 0;" />`,
+          `<img src="${url}" alt="Медиа" draggable="true" data-media="true" style="max-width: 100%; height: auto; display: block; margin: 16px 0; object-fit: contain;" />`,
         )
         return
       }
       insertHtmlAfterSelection(
-        `<video src="${url}" controls style="max-width: 100%; height: auto; display: block; margin: 16px 0;"></video>`,
+        `<video src="${url}" controls draggable="true" data-media="true" style="max-width: 100%; width: 100%; height: auto; display: block; margin: 16px 0; object-fit: contain;"></video>`,
       )
     },
     [insertHtmlAfterSelection, onUploadMedia]
@@ -349,6 +406,79 @@ export function RichTextEditor({
     },
     [handleMediaUpload]
   )
+
+  const moveSelectedMedia = useCallback(
+    (direction: "up" | "down") => {
+      if (!selectedMedia) return
+      const mediaElement = selectedMedia
+      const blockElement =
+        mediaElement.closest("p, div, h1, h2, h3, h4, h5, h6, li, blockquote") ?? mediaElement
+      const parent = blockElement.parentElement
+      if (!parent) return
+      const sibling = direction === "up" ? blockElement.previousElementSibling : blockElement.nextElementSibling
+      if (!sibling) return
+      if (direction === "up") {
+        parent.insertBefore(blockElement, sibling)
+      } else {
+        parent.insertBefore(blockElement, sibling.nextElementSibling)
+      }
+      editorRef.current?.focus()
+      handleInput()
+    },
+    [handleInput, selectedMedia]
+  )
+
+  const handleDragStart = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement | null
+    if (!target) return
+    const media = target.closest("img, video")
+    if (!media || !editorRef.current?.contains(media)) return
+    draggedMediaRef.current = media as HTMLElement
+    event.dataTransfer.effectAllowed = "move"
+    event.dataTransfer.setData("text/plain", "media")
+  }, [])
+
+  const handleDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    if (!draggedMediaRef.current) return
+    event.preventDefault()
+    event.dataTransfer.dropEffect = "move"
+  }, [])
+
+  const handleDrop = useCallback(
+    (event: React.DragEvent<HTMLDivElement>) => {
+      const dragged = draggedMediaRef.current
+      if (!dragged || !editorRef.current) return
+      event.preventDefault()
+      const target = event.target as HTMLElement | null
+      if (!target || !editorRef.current.contains(target)) {
+        editorRef.current.appendChild(dragged)
+        handleInput()
+        draggedMediaRef.current = null
+        return
+      }
+      const dropTarget = target.closest("img, video, p, h1, h2, h3, h4, h5, h6, li, blockquote, div")
+      if (!dropTarget || dropTarget === dragged) {
+        editorRef.current.appendChild(dragged)
+        handleInput()
+        draggedMediaRef.current = null
+        return
+      }
+      const rect = dropTarget.getBoundingClientRect()
+      const insertBefore = event.clientY < rect.top + rect.height / 2
+      if (insertBefore) {
+        dropTarget.parentElement?.insertBefore(dragged, dropTarget)
+      } else {
+        dropTarget.parentElement?.insertBefore(dragged, dropTarget.nextSibling)
+      }
+      handleInput()
+      draggedMediaRef.current = null
+    },
+    [handleInput]
+  )
+
+  const handleDragEnd = useCallback(() => {
+    draggedMediaRef.current = null
+  }, [])
 
   return (
     <div className="space-y-2">
@@ -482,6 +612,30 @@ export function RichTextEditor({
           <Video className="h-4 w-4 mr-1" />
           Видео
         </Button>
+        <Button type="button" variant="outline" size="sm" onClick={applyResponsiveLayout} disabled={disabled}>
+          <Smartphone className="h-4 w-4 mr-1" />
+          Автоподгонка
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => moveSelectedMedia("up")}
+          disabled={disabled || !selectedMedia}
+        >
+          <ArrowUp className="h-4 w-4 mr-1" />
+          Медиа вверх
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => moveSelectedMedia("down")}
+          disabled={disabled || !selectedMedia}
+        >
+          <ArrowDown className="h-4 w-4 mr-1" />
+          Медиа вниз
+        </Button>
         <Dialog>
           <DialogTrigger asChild>
             <Button type="button" variant="outline" size="sm" disabled={disabled}>
@@ -513,6 +667,10 @@ export function RichTextEditor({
           contentEditable={!disabled}
           onInput={handleInput}
           onPaste={handlePaste}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+          onDragEnd={handleDragEnd}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           aria-label={placeholder ?? "Текст"}
