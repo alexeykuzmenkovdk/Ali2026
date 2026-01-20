@@ -81,8 +81,13 @@ export default function TelegramMiniAppPage() {
   const [rateUpdatedAt, setRateUpdatedAt] = useState("")
   const [rubAmount, setRubAmount] = useState(50000)
   const [cnyAmount, setCnyAmount] = useState(4000)
+  const [rubInput, setRubInput] = useState("50000")
+  const [cnyInput, setCnyInput] = useState("4000")
+  const [lastEdited, setLastEdited] = useState<"rub" | "cny" | null>("rub")
   const [contactPhone, setContactPhone] = useState("")
   const [receiptUrl, setReceiptUrl] = useState<string | null>(null)
+  const [orderError, setOrderError] = useState("")
+  const [isCreatingOrder, setIsCreatingOrder] = useState(false)
   const [stageChecks, setStageChecks] = useState({
     amount: false,
     bank: false,
@@ -249,49 +254,108 @@ export default function TelegramMiniAppPage() {
   }, [order, fetchActiveOrder])
 
   useEffect(() => {
-    const rate = getRateForCny(cnyAmount)
-    setExchangeRate(rate)
-    setRubAmount(Math.round(cnyAmount * rate))
-  }, [baseRate, cnyAmount, getRateForCny, isManualRate, manualRate])
+    if (lastEdited === "cny") {
+      const rate = getRateForCny(cnyAmount)
+      const nextRub = Math.round(cnyAmount * rate)
+      setExchangeRate(rate)
+      setRubAmount(nextRub)
+      setRubInput(nextRub ? String(nextRub) : "")
+      return
+    }
+    if (lastEdited === "rub") {
+      const rate = getRateForRub(rubAmount)
+      const nextCny = rate ? Math.round(rubAmount / rate) : 0
+      setExchangeRate(rate)
+      setCnyAmount(nextCny)
+      setCnyInput(nextCny ? String(nextCny) : "")
+    }
+  }, [baseRate, cnyAmount, getRateForCny, getRateForRub, isManualRate, manualRate, lastEdited, rubAmount])
+
+  const sanitizeAmountInput = (value: string) => value.replace(/[^\d]/g, "")
 
   const handleRubChange = (value: string) => {
-    const parsed = Number(value.replace(/\s/g, ""))
+    const sanitized = sanitizeAmountInput(value)
+    setRubInput(sanitized)
+    setLastEdited("rub")
+    if (!sanitized) {
+      setRubAmount(0)
+      setCnyAmount(0)
+      setCnyInput("")
+      return
+    }
+    const parsed = Number(sanitized)
     if (!Number.isNaN(parsed)) {
       const rate = getRateForRub(parsed)
+      const nextCny = rate ? Math.round(parsed / rate) : 0
       setRubAmount(parsed)
       setExchangeRate(rate)
-      setCnyAmount(Math.round(parsed / rate))
+      setCnyAmount(nextCny)
+      setCnyInput(nextCny ? String(nextCny) : "")
     }
   }
 
   const handleCnyChange = (value: string) => {
-    const parsed = Number(value.replace(/\s/g, ""))
+    const sanitized = sanitizeAmountInput(value)
+    setCnyInput(sanitized)
+    setLastEdited("cny")
+    if (!sanitized) {
+      setCnyAmount(0)
+      setRubAmount(0)
+      setRubInput("")
+      return
+    }
+    const parsed = Number(sanitized)
     if (!Number.isNaN(parsed)) {
       const rate = getRateForCny(parsed)
+      const nextRub = Math.round(parsed * rate)
       setCnyAmount(parsed)
       setExchangeRate(rate)
-      setRubAmount(Math.round(parsed * rate))
+      setRubAmount(nextRub)
+      setRubInput(nextRub ? String(nextRub) : "")
     }
   }
 
   const handleCreateOrder = async () => {
-    const orderRate = getRateForCny(cnyAmount)
-    const response = await fetch("/api/orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...apiHeaders },
-      body: JSON.stringify({
-        totalRub: rubAmount,
-        totalCny: cnyAmount,
-        rate: orderRate,
-        contactPhone: contactPhone.trim() || undefined,
-      }),
-    })
+    if (isCreatingOrder) return
+    setOrderError("")
+    setIsCreatingOrder(true)
+    try {
+      const orderRate = getRateForCny(cnyAmount)
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...apiHeaders },
+        body: JSON.stringify({
+          totalRub: rubAmount,
+          totalCny: cnyAmount,
+          rate: orderRate,
+          contactPhone: contactPhone.trim() || undefined,
+        }),
+      })
 
-    if (response.ok) {
-      const data = await response.json()
-      setOrder(data.order)
-      setSteps(data.steps ?? [])
-      setMessages(data.messages ?? [])
+      if (response.ok) {
+        const data = await response.json()
+        setOrder(data.order)
+        setSteps(data.steps ?? [])
+        setMessages(data.messages ?? [])
+        return
+      }
+
+      if (response.status === 401) {
+        setOrderError("Откройте мини-приложение внутри Telegram, чтобы создать заявку.")
+        return
+      }
+
+      if (response.status === 409) {
+        setOrderError("У вас уже есть активная заявка. Перейдите в комнату сделки.")
+        return
+      }
+
+      setOrderError("Не удалось создать заявку. Попробуйте еще раз через несколько секунд.")
+    } catch (error) {
+      console.error("Ошибка при создании заявки:", error)
+      setOrderError("Не удалось создать заявку. Проверьте подключение к сети.")
+    } finally {
+      setIsCreatingOrder(false)
     }
   }
 
@@ -340,10 +404,14 @@ export default function TelegramMiniAppPage() {
   }
 
   const handleBuyShowcase = (priceCny: number) => {
+    setLastEdited("cny")
     setCnyAmount(priceCny)
+    setCnyInput(String(priceCny))
     const rate = getRateForCny(priceCny)
+    const nextRub = Math.round(priceCny * rate)
     setExchangeRate(rate)
-    setRubAmount(Math.round(priceCny * rate))
+    setRubAmount(nextRub)
+    setRubInput(String(nextRub))
     setActiveTab("exchange")
   }
 
@@ -470,11 +538,11 @@ export default function TelegramMiniAppPage() {
                             <CardContent className="space-y-4">
                               <div className="space-y-2">
                                 <label className="text-sm text-gray-600">Отдаю (RUB)</label>
-                                <Input value={rubAmount} onChange={(event) => handleRubChange(event.target.value)} />
+                                <Input value={rubInput} onChange={(event) => handleRubChange(event.target.value)} inputMode="numeric" />
                               </div>
                               <div className="space-y-2">
                                 <label className="text-sm text-gray-600">Получаю (CNY)</label>
-                                <Input value={cnyAmount} onChange={(event) => handleCnyChange(event.target.value)} />
+                                <Input value={cnyInput} onChange={(event) => handleCnyChange(event.target.value)} inputMode="numeric" />
                               </div>
                               <div className="space-y-2">
                                 <label className="text-sm text-gray-600">Телефон для связи (если нет username)</label>
@@ -510,9 +578,14 @@ export default function TelegramMiniAppPage() {
                                   </div>
                                 )}
                               </div>
-                              <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white" onClick={handleCreateOrder}>
+                              <Button
+                                className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                                onClick={handleCreateOrder}
+                                disabled={isCreatingOrder || !rubAmount || !cnyAmount}
+                              >
                                 Создать заявку
                               </Button>
+                              {orderError && <p className="text-xs text-red-500">{orderError}</p>}
                             </CardContent>
                           </Card>
                           <Card className="border-orange-100 bg-orange-50/70">
