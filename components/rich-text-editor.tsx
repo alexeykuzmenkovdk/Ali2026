@@ -532,6 +532,16 @@ export function RichTextEditor({
     draggedMediaRef.current = null
   }, [])
 
+  const handleEditorClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement | null
+    if (!target || !editorRef.current?.contains(target)) {
+      setSelectedMedia(null)
+      return
+    }
+    const media = target.closest("img, video")
+    setSelectedMedia(media instanceof HTMLElement ? media : null)
+  }, [])
+
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-2 rounded-md border bg-white p-2">
@@ -755,6 +765,7 @@ export function RichTextEditor({
           onDragOver={handleDragOver}
           onDrop={handleDrop}
           onDragEnd={handleDragEnd}
+          onClick={handleEditorClick}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           aria-label={placeholder ?? "Текст"}
