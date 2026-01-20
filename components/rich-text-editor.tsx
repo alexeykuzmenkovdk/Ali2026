@@ -3,9 +3,12 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type CSSProperties } from "react"
 import {
   AlignCenter,
+  AlignJustify,
   AlignLeft,
   AlignRight,
   Bold,
+  Code,
+  Eraser,
   Heading2,
   Heading3,
   ImageIcon,
@@ -14,13 +17,17 @@ import {
   List,
   ListOrdered,
   Minus,
+  Palette,
   Plus,
   Quote,
+  Redo2,
+  Strikethrough,
   TableIcon,
   Underline,
+  Undo2,
   Video,
 } from "lucide-react"
-import { Extension, Node, mergeAttributes } from "@tiptap/core"
+import { Extension, Mark, Node, mergeAttributes } from "@tiptap/core"
 import { EditorContent, NodeViewWrapper, ReactNodeViewRenderer, useEditor, type NodeViewProps } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import UnderlineExtension from "@tiptap/extension-underline"
@@ -49,6 +56,45 @@ const FOOTNOTE_SYMBOLS = ["¹", "²", "³", "⁴", "⁵", "⁶"]
 const DEFAULT_LINE_HEIGHT = "1.6"
 const LINE_HEIGHT_OPTIONS = ["1.2", "1.4", "1.6", "1.8", "2.0"]
 const DEFAULT_MEDIA_WIDTH = 70
+const FONT_SIZE_OPTIONS = ["12px", "14px", "16px", "18px", "20px", "24px", "28px", "32px"]
+
+const TextStyle = Mark.create({
+  name: "textStyle",
+  addAttributes() {
+    return {
+      color: {
+        default: null,
+        parseHTML: (element) => element.style.color || null,
+        renderHTML: (attributes) => {
+          if (!attributes.color) {
+            return {}
+          }
+          return { style: `color: ${attributes.color}` }
+        },
+      },
+      fontSize: {
+        default: null,
+        parseHTML: (element) => element.style.fontSize || null,
+        renderHTML: (attributes) => {
+          if (!attributes.fontSize) {
+            return {}
+          }
+          return { style: `font-size: ${attributes.fontSize}` }
+        },
+      },
+    }
+  },
+  parseHTML() {
+    return [
+      {
+        tag: "span",
+      },
+    ]
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ["span", mergeAttributes(HTMLAttributes), 0]
+  },
+})
 
 const LineHeight = Extension.create({
   name: "lineHeight",
@@ -86,6 +132,46 @@ const LineHeight = Extension.create({
         () =>
         ({ commands }) =>
           this.options.types.every((type) => commands.updateAttributes(type, { lineHeight: null })),
+    }
+  },
+})
+
+const FontSize = Extension.create({
+  name: "fontSize",
+  addOptions() {
+    return {
+      types: ["textStyle"],
+    }
+  },
+  addGlobalAttributes() {
+    return [
+      {
+        types: this.options.types,
+        attributes: {
+          fontSize: {
+            default: null,
+            parseHTML: (element) => element.style.fontSize || null,
+            renderHTML: (attributes) => {
+              if (!attributes.fontSize) {
+                return {}
+              }
+              return { style: `font-size: ${attributes.fontSize}` }
+            },
+          },
+        },
+      },
+    ]
+  },
+  addCommands() {
+    return {
+      setFontSize:
+        (fontSize: string) =>
+        ({ commands }) =>
+          commands.setMark("textStyle", { fontSize }),
+      unsetFontSize:
+        () =>
+        ({ commands }) =>
+          commands.updateAttributes("textStyle", { fontSize: null }),
     }
   },
 })
@@ -512,12 +598,16 @@ export function RichTextEditor({
   const videoInputRef = useRef<HTMLInputElement | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [lineHeightValue, setLineHeightValue] = useState("default")
+  const [fontSizeValue, setFontSizeValue] = useState("default")
+  const [textColor, setTextColor] = useState("#000000")
 
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
       }),
+      TextStyle,
+      FontSize,
       UnderlineExtension,
       Link.configure({
         openOnClick: false,
@@ -616,12 +706,23 @@ export function RichTextEditor({
         editor.getAttributes("paragraph").lineHeight ?? editor.getAttributes("heading").lineHeight ?? null
       setLineHeightValue(currentLineHeight ?? "default")
     }
+    const updateInlineStyleValues = () => {
+      const currentFontSize = editor.getAttributes("textStyle").fontSize ?? null
+      const currentColor = editor.getAttributes("textStyle").color ?? null
+      setFontSizeValue(currentFontSize ?? "default")
+      setTextColor(currentColor ?? "#000000")
+    }
     updateLineHeightValue()
+    updateInlineStyleValues()
     editor.on("selectionUpdate", updateLineHeightValue)
     editor.on("transaction", updateLineHeightValue)
+    editor.on("selectionUpdate", updateInlineStyleValues)
+    editor.on("transaction", updateInlineStyleValues)
     return () => {
       editor.off("selectionUpdate", updateLineHeightValue)
       editor.off("transaction", updateLineHeightValue)
+      editor.off("selectionUpdate", updateInlineStyleValues)
+      editor.off("transaction", updateInlineStyleValues)
     }
   }, [editor])
 
@@ -662,6 +763,24 @@ export function RichTextEditor({
       return
     }
     editor.chain().focus().setLineHeight(nextValue).run()
+  }
+
+  const handleFontSizeChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    if (!editor) return
+    const nextValue = event.target.value
+    if (nextValue === "default") {
+      editor.chain().focus().unsetFontSize().run()
+      return
+    }
+    editor.chain().focus().setFontSize(nextValue).run()
+  }
+
+  const handleColorChange = (event: ChangeEvent<HTMLInputElement>) => {
+    if (!editor) return
+    const nextColor = event.target.value
+    setTextColor(nextColor)
+    const currentStyles = editor.getAttributes("textStyle")
+    editor.chain().focus().setMark("textStyle", { ...currentStyles, color: nextColor }).run()
   }
 
   const handleImageInput = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -710,6 +829,26 @@ export function RichTextEditor({
             type="button"
             variant="ghost"
             size="sm"
+            onClick={() => editor?.chain().focus().toggleStrike().run()}
+            disabled={!editor}
+            className={editor?.isActive("strike") ? "bg-muted" : ""}
+          >
+            <Strikethrough className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => editor?.chain().focus().toggleCode().run()}
+            disabled={!editor}
+            className={editor?.isActive("code") ? "bg-muted" : ""}
+          >
+            <Code className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => editor?.chain().focus().toggleUnderline().run()}
             disabled={!editor}
             className={editor?.isActive("underline") ? "bg-muted" : ""}
@@ -725,6 +864,15 @@ export function RichTextEditor({
             className={editor?.isActive("link") ? "bg-muted" : ""}
           >
             <LinkIcon className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => editor?.chain().focus().unsetAllMarks().run()}
+            disabled={!editor}
+          >
+            <Eraser className="h-4 w-4" />
           </Button>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -810,6 +958,58 @@ export function RichTextEditor({
           >
             <AlignRight className="h-4 w-4" />
           </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => editor?.chain().focus().setTextAlign("justify").run()}
+            disabled={!editor}
+            className={editor?.isActive({ textAlign: "justify" }) ? "bg-muted" : ""}
+          >
+            <AlignJustify className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-slate-500">Размер</span>
+          <select
+            className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+            value={fontSizeValue}
+            onChange={handleFontSizeChange}
+            disabled={!editor}
+          >
+            <option value="default">По умолчанию</option>
+            {FONT_SIZE_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-slate-500">Цвет</span>
+          <label className="flex items-center gap-2 text-xs text-slate-500">
+            <Palette className="h-4 w-4" />
+            <input
+              type="color"
+              className="h-8 w-8 cursor-pointer rounded border border-input bg-white p-0.5"
+              value={textColor}
+              onChange={handleColorChange}
+              disabled={!editor}
+            />
+          </label>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              if (!editor) return
+              const currentStyles = editor.getAttributes("textStyle")
+              editor.chain().focus().setMark("textStyle", { ...currentStyles, color: null }).run()
+            }}
+            disabled={!editor}
+          >
+            <Eraser className="h-4 w-4" />
+          </Button>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="ghost" size="sm" onClick={() => imageInputRef.current?.click()}>
@@ -846,6 +1046,14 @@ export function RichTextEditor({
               </option>
             ))}
           </select>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="ghost" size="sm" onClick={() => editor?.chain().focus().undo().run()}>
+            <Undo2 className="h-4 w-4" />
+          </Button>
+          <Button type="button" variant="ghost" size="sm" onClick={() => editor?.chain().focus().redo().run()}>
+            <Redo2 className="h-4 w-4" />
+          </Button>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button
