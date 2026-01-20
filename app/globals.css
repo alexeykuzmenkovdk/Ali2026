@@ -442,7 +442,9 @@
 .blog-content img,
 .blog-content video,
 .blog-content iframe {
+  width: 100%;
   height: auto;
+  object-fit: contain;
 }
 
 .blog-content .blog-split {
@@ -537,6 +539,8 @@
 .blog-content figure.blog-media img,
 .blog-content figure.blog-media video {
   width: 100%;
+  height: auto;
+  object-fit: contain;
   border-radius: 0.75rem;
   display: block;
 }
@@ -558,6 +562,14 @@
   border: 1px solid hsl(var(--input));
   border-radius: 0.75rem;
   background: white;
+}
+
+.tiptap-editor__toolbar {
+  position: sticky;
+  top: 1rem;
+  z-index: 10;
+  background: rgba(248, 250, 252, 0.95);
+  backdrop-filter: blur(6px);
 }
 
 .tiptap-editor__content {

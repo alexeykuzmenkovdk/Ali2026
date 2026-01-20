@@ -595,7 +595,7 @@ export function RichTextEditor({
 
   return (
     <div className="space-y-3" id={id}>
-      <div className="flex flex-wrap gap-2 rounded-lg border border-input bg-muted/40 p-2">
+      <div className="tiptap-editor__toolbar flex flex-wrap gap-2 rounded-lg border border-input bg-muted/40 p-2">
         <div className="flex flex-wrap gap-2">
           <Button
             type="button"

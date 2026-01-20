@@ -39,7 +39,7 @@ const renderContent = (content?: string | null) => {
   if (hasHtml) {
     return (
       <div
-        className="space-y-4 text-base leading-7 text-gray-700 [&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:text-gray-900 [&_h3]:text-xl [&_h3]:font-semibold [&_h3]:text-gray-900 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_blockquote]:border-l-4 [&_blockquote]:border-orange-200 [&_blockquote]:pl-4 [&_img]:rounded-xl [&_img]:border [&_img]:border-gray-200 [&_img]:max-h-[520px] [&_img]:object-cover [&_video]:rounded-xl [&_video]:border [&_video]:border-gray-200 [&_video]:max-h-[520px] [&_video]:w-full"
+        className="space-y-4 text-base leading-7 text-gray-700 [&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:text-gray-900 [&_h3]:text-xl [&_h3]:font-semibold [&_h3]:text-gray-900 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_blockquote]:border-l-4 [&_blockquote]:border-orange-200 [&_blockquote]:pl-4 [&_img]:rounded-xl [&_img]:border [&_img]:border-gray-200 [&_img]:h-auto [&_img]:w-full [&_img]:object-contain [&_video]:rounded-xl [&_video]:border [&_video]:border-gray-200 [&_video]:h-auto [&_video]:w-full [&_video]:object-contain"
         dangerouslySetInnerHTML={{ __html: content }}
       />
     )
@@ -95,9 +95,9 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         <section className="container mx-auto px-4 pb-16">
           <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
             {coverImageSrc ? (
-              <img src={coverImageSrc} alt={post.title} className="h-96 w-full object-cover" />
+              <img src={coverImageSrc} alt={post.title} className="max-h-[520px] w-full object-contain" />
             ) : coverVideoSrc ? (
-              <video src={coverVideoSrc} className="h-96 w-full object-cover" controls />
+              <video src={coverVideoSrc} className="max-h-[520px] w-full object-contain" controls />
             ) : null}
             <article className="blog-content px-6 py-8">
               {renderContent(post.content) ?? (
