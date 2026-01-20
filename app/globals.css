@@ -629,6 +629,7 @@
 
 .tiptap-media__canvas {
   position: relative;
+  cursor: grab;
 }
 
 .tiptap-media__controls {

@@ -267,6 +267,13 @@ function ImageBlockView({ node, updateAttributes, selected, editor, getPos }: No
   const { src, align, width, caption } = node.attrs
   const widthValue = Number(width) || 100
 
+  const handleSelect = () => {
+    const position = getPos?.()
+    if (typeof position === "number") {
+      editor.commands.setNodeSelection(position)
+    }
+  }
+
   return (
     <NodeViewWrapper
       className={`blog-media tiptap-media ${selected ? "is-selected" : ""}`}
@@ -276,19 +283,21 @@ function ImageBlockView({ node, updateAttributes, selected, editor, getPos }: No
       style={{ "--media-width": `${widthValue}%` } as CSSProperties}
       contentEditable={false}
     >
-      <div className="tiptap-media__canvas">
-        {src ? <img src={src} alt="" className="blog-media__element" draggable={false} /> : null}
+      <div
+        className="tiptap-media__canvas"
+        data-drag-handle
+        onMouseDown={(event) => {
+          if (event.button !== 0) return
+          handleSelect()
+        }}
+      >
+        {src ? <img src={src} alt="" className="blog-media__element" /> : null}
         <MediaControls
           align={align}
           onAlignChange={(nextAlign) => updateAttributes({ align: nextAlign })}
           width={widthValue}
           onWidthChange={(nextWidth) => updateAttributes({ width: nextWidth })}
-          onSelect={() => {
-            const position = getPos?.()
-            if (typeof position === "number") {
-              editor.commands.setNodeSelection(position)
-            }
-          }}
+          onSelect={handleSelect}
         />
       </div>
       <div className="tiptap-media__caption">
@@ -308,6 +317,13 @@ function VideoBlockView({ node, updateAttributes, selected, editor, getPos }: No
   const { src, align, width, caption } = node.attrs
   const widthValue = Number(width) || 100
 
+  const handleSelect = () => {
+    const position = getPos?.()
+    if (typeof position === "number") {
+      editor.commands.setNodeSelection(position)
+    }
+  }
+
   return (
     <NodeViewWrapper
       className={`blog-media tiptap-media ${selected ? "is-selected" : ""}`}
@@ -317,19 +333,21 @@ function VideoBlockView({ node, updateAttributes, selected, editor, getPos }: No
       style={{ "--media-width": `${widthValue}%` } as CSSProperties}
       contentEditable={false}
     >
-      <div className="tiptap-media__canvas">
+      <div
+        className="tiptap-media__canvas"
+        data-drag-handle
+        onMouseDown={(event) => {
+          if (event.button !== 0) return
+          handleSelect()
+        }}
+      >
         {src ? <video src={src} controls className="blog-media__element" /> : null}
         <MediaControls
           align={align}
           onAlignChange={(nextAlign) => updateAttributes({ align: nextAlign })}
           width={widthValue}
           onWidthChange={(nextWidth) => updateAttributes({ width: nextWidth })}
-          onSelect={() => {
-            const position = getPos?.()
-            if (typeof position === "number") {
-              editor.commands.setNodeSelection(position)
-            }
-          }}
+          onSelect={handleSelect}
         />
       </div>
       <div className="tiptap-media__caption">
@@ -392,7 +410,7 @@ function MediaControls({
         draggable
         title="Перетащить"
         onMouseDown={(event) => {
-          event.preventDefault()
+          if (event.button !== 0) return
           onSelect?.()
         }}
       >
