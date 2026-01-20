@@ -5,6 +5,7 @@ import { TermsModal } from "@/components/terms-modal"
 import { PrivacyModal } from "@/components/privacy-modal"
 import { BLOG_CATEGORIES } from "@/lib/blog"
 import { listBlogPosts } from "@/lib/store"
+import { normalizeMediaUrl } from "@/lib/media"
 
 export const dynamic = "force-dynamic"
 
@@ -60,41 +61,47 @@ export default async function BlogPage() {
                   </div>
                 ) : (
                   <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                    {categoryPosts.map((post) => (
-                      <Link
-                        key={post.id}
-                        href={`/blog/${post.category}/${post.slug}`}
-                        className="group rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
-                      >
-                        <div className="relative h-48 overflow-hidden rounded-t-2xl bg-gray-100">
-                          {post.coverImageUrl ? (
-                            <img
-                              src={post.coverImageUrl}
-                              alt={post.title}
-                              className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                            />
-                          ) : post.coverVideoUrl ? (
-                            <video
-                              src={post.coverVideoUrl}
-                              className="h-full w-full object-cover"
-                              muted
-                              playsInline
-                            />
-                          ) : (
-                            <div className="flex h-full items-center justify-center text-sm text-gray-400">Нет медиа</div>
-                          )}
-                        </div>
-                        <div className="p-5">
-                          <p className="text-xs text-gray-400">{formatDate(post.createdAt)}</p>
-                          <h3 className="mt-2 text-lg font-semibold text-gray-900 group-hover:text-orange-600">
-                            {post.title}
-                          </h3>
-                          <p className="mt-2 text-sm text-gray-600 line-clamp-3">
-                            {post.excerpt || "Скоро здесь появится подробное описание публикации."}
-                          </p>
-                        </div>
-                      </Link>
-                    ))}
+                    {categoryPosts.map((post) => {
+                      const coverImageSrc = normalizeMediaUrl(post.coverImageUrl)
+                      const coverVideoSrc = normalizeMediaUrl(post.coverVideoUrl)
+                      return (
+                        <Link
+                          key={post.id}
+                          href={`/blog/${post.category}/${post.slug}`}
+                          className="group rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                        >
+                          <div className="relative h-48 overflow-hidden rounded-t-2xl bg-gray-100">
+                            {coverImageSrc ? (
+                              <img
+                                src={coverImageSrc}
+                                alt={post.title}
+                                className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                              />
+                            ) : coverVideoSrc ? (
+                              <video
+                                src={coverVideoSrc}
+                                className="h-full w-full object-cover"
+                                muted
+                                playsInline
+                              />
+                            ) : (
+                              <div className="flex h-full items-center justify-center text-sm text-gray-400">
+                                Нет медиа
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-5">
+                            <p className="text-xs text-gray-400">{formatDate(post.createdAt)}</p>
+                            <h3 className="mt-2 text-lg font-semibold text-gray-900 group-hover:text-orange-600">
+                              {post.title}
+                            </h3>
+                            <p className="mt-2 text-sm text-gray-600 line-clamp-3">
+                              {post.excerpt || "Скоро здесь появится подробное описание публикации."}
+                            </p>
+                          </div>
+                        </Link>
+                      )
+                    })}
                   </div>
                 )}
               </div>

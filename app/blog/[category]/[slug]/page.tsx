@@ -6,6 +6,7 @@ import { TermsModal } from "@/components/terms-modal"
 import { PrivacyModal } from "@/components/privacy-modal"
 import { BLOG_CATEGORY_LOOKUP } from "@/lib/blog"
 import { getBlogPostBySlug } from "@/lib/store"
+import { normalizeMediaUrl } from "@/lib/media"
 
 export const dynamic = "force-dynamic"
 
@@ -27,7 +28,7 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
     openGraph: {
       title: `${post.title} | Блог AlipayFast`,
       description: post.excerpt ?? undefined,
-      images: [post.coverImageUrl ?? "/og-alipay-fast.png"],
+      images: [normalizeMediaUrl(post.coverImageUrl) ?? "/og-alipay-fast.png"],
     },
   }
 }
@@ -68,6 +69,8 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   if (!post) {
     notFound()
   }
+  const coverImageSrc = normalizeMediaUrl(post.coverImageUrl)
+  const coverVideoSrc = normalizeMediaUrl(post.coverVideoUrl)
 
   return (
     <>
@@ -91,10 +94,10 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
         <section className="container mx-auto px-4 pb-16">
           <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
-            {post.coverImageUrl ? (
-              <img src={post.coverImageUrl} alt={post.title} className="h-96 w-full object-cover" />
-            ) : post.coverVideoUrl ? (
-              <video src={post.coverVideoUrl} className="h-96 w-full object-cover" controls />
+            {coverImageSrc ? (
+              <img src={coverImageSrc} alt={post.title} className="h-96 w-full object-cover" />
+            ) : coverVideoSrc ? (
+              <video src={coverVideoSrc} className="h-96 w-full object-cover" controls />
             ) : null}
             <article className="px-6 py-8">
               {renderContent(post.content) ?? (
