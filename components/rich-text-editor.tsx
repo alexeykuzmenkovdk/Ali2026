@@ -16,7 +16,9 @@ import {
   Italic,
   List,
   ListOrdered,
+  Minus,
   Outdent,
+  Plus,
   Smartphone,
   Underline,
   Video,
@@ -159,6 +161,7 @@ export function RichTextEditor({
   const [selectedFontSize, setSelectedFontSize] = useState("inherit")
   const [selectedLineHeight, setSelectedLineHeight] = useState("normal")
   const [selectedMedia, setSelectedMedia] = useState<HTMLElement | null>(null)
+  const [selectedMediaWidth, setSelectedMediaWidth] = useState(100)
 
   const fontFamilies = useMemo(
     () => [
@@ -227,6 +230,30 @@ export function RichTextEditor({
     document.addEventListener("selectionchange", handleSelectionChange)
     return () => document.removeEventListener("selectionchange", handleSelectionChange)
   }, [])
+
+  useEffect(() => {
+    if (!selectedMedia || selectedMedia.tagName.toLowerCase() !== "img") {
+      setSelectedMediaWidth(100)
+      return
+    }
+    const storedWidth = selectedMedia.getAttribute("data-media-width")
+    if (storedWidth) {
+      const parsed = Number.parseFloat(storedWidth)
+      if (!Number.isNaN(parsed)) {
+        setSelectedMediaWidth(Math.min(100, Math.max(20, parsed)))
+        return
+      }
+    }
+    const widthValue = selectedMedia.style.width
+    if (widthValue.endsWith("%")) {
+      const parsed = Number.parseFloat(widthValue)
+      if (!Number.isNaN(parsed)) {
+        setSelectedMediaWidth(Math.min(100, Math.max(20, parsed)))
+        return
+      }
+    }
+    setSelectedMediaWidth(100)
+  }, [selectedMedia])
 
   const handleInput = useCallback(() => {
     onChange(editorRef.current?.innerHTML ?? "")
@@ -351,6 +378,9 @@ export function RichTextEditor({
       element.style.display = "block"
       element.style.margin = "16px 0"
       element.style.objectFit = "contain"
+      if (element.tagName.toLowerCase() === "img" && !element.style.width) {
+        element.style.width = "100%"
+      }
       if (element.tagName.toLowerCase() === "video") {
         element.style.width = "100%"
       }
@@ -369,6 +399,28 @@ export function RichTextEditor({
     editorRef.current.innerHTML = updatedHtml
     onChange(updatedHtml)
   }, [onChange])
+
+  const applyMediaWidth = useCallback(
+    (value: number) => {
+      if (!selectedMedia || selectedMedia.tagName.toLowerCase() !== "img") return
+      const nextValue = Math.min(100, Math.max(20, value))
+      selectedMedia.style.width = `${nextValue}%`
+      selectedMedia.style.height = "auto"
+      selectedMedia.style.maxWidth = "100%"
+      selectedMedia.setAttribute("data-media-width", `${nextValue}`)
+      setSelectedMediaWidth(nextValue)
+      handleInput()
+    },
+    [handleInput, selectedMedia],
+  )
+
+  const adjustMediaWidth = useCallback(
+    (delta: number) => {
+      if (!selectedMedia || selectedMedia.tagName.toLowerCase() !== "img") return
+      applyMediaWidth(selectedMediaWidth + delta)
+    },
+    [applyMediaWidth, selectedMedia, selectedMediaWidth],
+  )
 
   const handleMediaUpload = useCallback(
     async (file: File, type: "image" | "video") => {
@@ -616,6 +668,38 @@ export function RichTextEditor({
           <Smartphone className="h-4 w-4 mr-1" />
           Автоподгонка
         </Button>
+        <div className="flex items-center gap-2 rounded-md border border-input bg-white px-2 py-1 text-sm">
+          <span className="text-xs text-gray-500">Размер фото</span>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => adjustMediaWidth(-10)}
+            disabled={disabled || !selectedMedia || selectedMedia.tagName.toLowerCase() !== "img"}
+          >
+            <Minus className="h-4 w-4" />
+          </Button>
+          <input
+            type="range"
+            min={20}
+            max={100}
+            step={5}
+            value={selectedMediaWidth}
+            onChange={(event) => applyMediaWidth(Number(event.target.value))}
+            className="w-24 accent-orange-500"
+            disabled={disabled || !selectedMedia || selectedMedia.tagName.toLowerCase() !== "img"}
+          />
+          <span className="text-xs text-gray-500">{selectedMediaWidth}%</span>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => adjustMediaWidth(10)}
+            disabled={disabled || !selectedMedia || selectedMedia.tagName.toLowerCase() !== "img"}
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
         <Button
           type="button"
           variant="outline"
