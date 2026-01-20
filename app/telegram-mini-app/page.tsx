@@ -200,9 +200,15 @@ export default function TelegramMiniAppPage() {
     fetchRate()
   }, [])
 
+  const resolvedInitData = useMemo(() => {
+    if (initData) return initData
+    if (typeof window === "undefined") return ""
+    return window.Telegram?.WebApp?.initData ?? ""
+  }, [initData])
+
   const apiHeaders = useMemo(
-    () => (initData ? { "x-telegram-init-data": initData } : {}),
-    [initData],
+    () => (resolvedInitData ? { "x-telegram-init-data": resolvedInitData } : {}),
+    [resolvedInitData],
   )
 
   const fetchActiveOrder = useCallback(async () => {
