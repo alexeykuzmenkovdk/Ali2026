@@ -46,6 +46,12 @@ const formatBlock = (tag: string) => {
   document.execCommand("formatBlock", false, tag)
 }
 
+const HTML_PLACEHOLDERS = {
+  splitMedia: '<div class="blog-split__placeholder">Добавьте фото или видео</div>',
+  splitText: '<div class="blog-split__text"><p>Добавьте текст...</p></div>',
+  gallery: '<div class="blog-gallery__placeholder">Добавьте изображения...</div>',
+}
+
 const escapeHtml = (input: string) =>
   input
     .replace(/&/g, "&amp;")
@@ -373,13 +379,15 @@ export function RichTextEditor({
     const mediaNodes = doc.querySelectorAll("img, video")
     mediaNodes.forEach((node) => {
       const element = node as HTMLElement
+      const inGallery = Boolean(element.closest(".blog-gallery"))
+      const inSplitMedia = Boolean(element.closest(".blog-split__media"))
       element.style.maxWidth = "100%"
       element.style.height = "auto"
       element.style.display = "block"
-      element.style.margin = "16px 0"
+      element.style.margin = inGallery || inSplitMedia ? "0" : "16px 0"
       element.style.objectFit = "contain"
       if (element.tagName.toLowerCase() === "img" && !element.style.width) {
-        element.style.width = "100%"
+        element.style.width = inGallery || inSplitMedia ? "100%" : "100%"
       }
       if (element.tagName.toLowerCase() === "video") {
         element.style.width = "100%"
@@ -422,21 +430,48 @@ export function RichTextEditor({
     [applyMediaWidth, selectedMedia, selectedMediaWidth],
   )
 
+  const insertMediaInLayout = useCallback(
+    (html: string) => {
+      const selection = window.getSelection()
+      if (!selection || !editorRef.current) {
+        insertHtmlAfterSelection(html)
+        return
+      }
+      const node = selection.anchorNode
+      const element = node instanceof Element ? node : node?.parentElement
+      const gallery = element?.closest(".blog-gallery")
+      if (gallery) {
+        gallery.querySelector(".blog-gallery__placeholder")?.remove()
+        gallery.insertAdjacentHTML("beforeend", html)
+        handleInput()
+        return
+      }
+      const splitMedia = element?.closest(".blog-split__media")
+      if (splitMedia) {
+        splitMedia.innerHTML = html
+        handleInput()
+        return
+      }
+      insertHtmlAfterSelection(html)
+    },
+    [handleInput, insertHtmlAfterSelection],
+  )
+
   const handleMediaUpload = useCallback(
     async (file: File, type: "image" | "video") => {
       const url = await onUploadMedia(file)
       if (!url) return
       if (type === "image") {
-        insertHtmlAfterSelection(
+        insertMediaInLayout(
           `<img src="${url}" alt="Медиа" draggable="true" data-media="true" style="max-width: 100%; height: auto; display: block; margin: 16px 0; object-fit: contain;" />`,
         )
         return
       }
-      insertHtmlAfterSelection(
+      insertMediaInLayout(
         `<video src="${url}" controls draggable="true" data-media="true" style="max-width: 100%; width: 100%; height: auto; display: block; margin: 16px 0; object-fit: contain;"></video>`,
       )
     },
-    [insertHtmlAfterSelection, onUploadMedia]
+    [insertMediaInLayout, onUploadMedia]
   )
 
   const handleImageChange = useCallback(
@@ -508,6 +543,22 @@ export function RichTextEditor({
         draggedMediaRef.current = null
         return
       }
+      const gallery = target.closest(".blog-gallery")
+      if (gallery && editorRef.current.contains(gallery)) {
+        gallery.querySelector(".blog-gallery__placeholder")?.remove()
+        gallery.appendChild(dragged)
+        handleInput()
+        draggedMediaRef.current = null
+        return
+      }
+      const splitMedia = target.closest(".blog-split__media")
+      if (splitMedia && editorRef.current.contains(splitMedia)) {
+        splitMedia.innerHTML = ""
+        splitMedia.appendChild(dragged)
+        handleInput()
+        draggedMediaRef.current = null
+        return
+      }
       const dropTarget = target.closest("img, video, p, h1, h2, h3, h4, h5, h6, li, blockquote, div")
       if (!dropTarget || dropTarget === dragged) {
         editorRef.current.appendChild(dragged)
@@ -541,6 +592,30 @@ export function RichTextEditor({
     const media = target.closest("img, video")
     setSelectedMedia(media instanceof HTMLElement ? media : null)
   }, [])
+
+  const insertSplitLayout = useCallback(
+    (position: "media-left" | "media-right") => {
+      if (!editorRef.current) return
+      const mediaHtml = selectedMedia ? selectedMedia.outerHTML : HTML_PLACEHOLDERS.splitMedia
+      if (selectedMedia) {
+        selectedMedia.remove()
+      }
+      const mediaBlock = `<div class="blog-split__media">${mediaHtml}</div>`
+      const textBlock = HTML_PLACEHOLDERS.splitText
+      const layoutHtml =
+        position === "media-left"
+          ? `<div class="blog-split blog-split--media-left" data-layout="split">${mediaBlock}${textBlock}</div>`
+          : `<div class="blog-split blog-split--media-right" data-layout="split">${textBlock}${mediaBlock}</div>`
+      insertHtmlAfterSelection(layoutHtml)
+    },
+    [insertHtmlAfterSelection, selectedMedia],
+  )
+
+  const insertGalleryLayout = useCallback(() => {
+    if (!editorRef.current) return
+    const layoutHtml = `<div class="blog-gallery" data-layout="gallery">${HTML_PLACEHOLDERS.gallery}</div>`
+    insertHtmlAfterSelection(layoutHtml)
+  }, [insertHtmlAfterSelection])
 
   return (
     <div className="space-y-2">
@@ -674,6 +749,15 @@ export function RichTextEditor({
           <Video className="h-4 w-4 mr-1" />
           Видео
         </Button>
+        <Button type="button" variant="outline" size="sm" onClick={() => insertSplitLayout("media-left")} disabled={disabled}>
+          Фото слева
+        </Button>
+        <Button type="button" variant="outline" size="sm" onClick={() => insertSplitLayout("media-right")} disabled={disabled}>
+          Фото справа
+        </Button>
+        <Button type="button" variant="outline" size="sm" onClick={insertGalleryLayout} disabled={disabled}>
+          Галерея
+        </Button>
         <Button type="button" variant="outline" size="sm" onClick={applyResponsiveLayout} disabled={disabled}>
           <Smartphone className="h-4 w-4 mr-1" />
           Автоподгонка
@@ -743,7 +827,7 @@ export function RichTextEditor({
               <DialogDescription>Так пост будет выглядеть на сайте.</DialogDescription>
             </DialogHeader>
             <div
-              className="max-h-[60vh] overflow-auto rounded-md border bg-white p-4 text-sm leading-relaxed [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:text-lg [&_h3]:font-semibold [&_p]:mb-4 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_img]:rounded-md"
+              className="blog-content max-h-[60vh] overflow-auto rounded-md border bg-white p-4 text-sm leading-relaxed [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:text-lg [&_h3]:font-semibold [&_p]:mb-4 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_img]:rounded-md"
               dangerouslySetInnerHTML={{ __html: value || "<p>Текст пока не добавлен.</p>" }}
             />
           </DialogContent>
