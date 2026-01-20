@@ -20,7 +20,7 @@ import {
   Underline,
   Video,
 } from "lucide-react"
-import { Node, mergeAttributes } from "@tiptap/core"
+import { Extension, Node, mergeAttributes } from "@tiptap/core"
 import { EditorContent, NodeViewWrapper, ReactNodeViewRenderer, useEditor, type NodeViewProps } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import UnderlineExtension from "@tiptap/extension-underline"
@@ -46,6 +46,49 @@ interface RichTextEditorProps {
 type MediaAlign = "left" | "center" | "right"
 
 const FOOTNOTE_SYMBOLS = ["¹", "²", "³", "⁴", "⁵", "⁶"]
+const DEFAULT_LINE_HEIGHT = "1.6"
+const LINE_HEIGHT_OPTIONS = ["1.2", "1.4", "1.6", "1.8", "2.0"]
+const DEFAULT_MEDIA_WIDTH = 70
+
+const LineHeight = Extension.create({
+  name: "lineHeight",
+  addOptions() {
+    return {
+      types: ["paragraph", "heading", "listItem"],
+    }
+  },
+  addGlobalAttributes() {
+    return [
+      {
+        types: this.options.types,
+        attributes: {
+          lineHeight: {
+            default: null,
+            parseHTML: (element) => element.style.lineHeight || null,
+            renderHTML: (attributes) => {
+              if (!attributes.lineHeight) {
+                return {}
+              }
+              return { style: `line-height: ${attributes.lineHeight}` }
+            },
+          },
+        },
+      },
+    ]
+  },
+  addCommands() {
+    return {
+      setLineHeight:
+        (lineHeight: string) =>
+        ({ commands }) =>
+          this.options.types.every((type) => commands.updateAttributes(type, { lineHeight })),
+      unsetLineHeight:
+        () =>
+        ({ commands }) =>
+          this.options.types.every((type) => commands.updateAttributes(type, { lineHeight: null })),
+    }
+  },
+})
 
 const ImageBlock = Node.create({
   name: "imageBlock",
@@ -68,7 +111,7 @@ const ImageBlock = Node.create({
         default: "center",
       },
       width: {
-        default: 100,
+        default: DEFAULT_MEDIA_WIDTH,
       },
       caption: {
         default: "",
@@ -88,7 +131,7 @@ const ImageBlock = Node.create({
             alt: img?.getAttribute("alt") ?? "",
             title: img?.getAttribute("title") ?? "",
             align: element.dataset.align ?? "center",
-            width: Number(element.dataset.width ?? 100),
+            width: Number(element.dataset.width ?? DEFAULT_MEDIA_WIDTH),
             caption: caption?.textContent ?? "",
           }
         },
@@ -102,7 +145,7 @@ const ImageBlock = Node.create({
             alt: element.getAttribute("alt") ?? "",
             title: element.getAttribute("title") ?? "",
             align: "center",
-            width: 100,
+            width: DEFAULT_MEDIA_WIDTH,
             caption: "",
           }
         },
@@ -153,7 +196,7 @@ const VideoBlock = Node.create({
         default: "center",
       },
       width: {
-        default: 100,
+        default: DEFAULT_MEDIA_WIDTH,
       },
       caption: {
         default: "",
@@ -171,7 +214,7 @@ const VideoBlock = Node.create({
           return {
             src: video?.getAttribute("src") ?? null,
             align: element.dataset.align ?? "center",
-            width: Number(element.dataset.width ?? 100),
+            width: Number(element.dataset.width ?? DEFAULT_MEDIA_WIDTH),
             caption: caption?.textContent ?? "",
           }
         },
@@ -183,7 +226,7 @@ const VideoBlock = Node.create({
           return {
             src: element.getAttribute("src"),
             align: "center",
-            width: 100,
+            width: DEFAULT_MEDIA_WIDTH,
             caption: "",
           }
         },
@@ -468,6 +511,7 @@ export function RichTextEditor({
   const imageInputRef = useRef<HTMLInputElement | null>(null)
   const videoInputRef = useRef<HTMLInputElement | null>(null)
   const [isUploading, setIsUploading] = useState(false)
+  const [lineHeightValue, setLineHeightValue] = useState("default")
 
   const editor = useEditor({
     extensions: [
@@ -491,6 +535,7 @@ export function RichTextEditor({
       TableRow,
       TableHeader,
       TableCell,
+      LineHeight,
       ImageBlock,
       VideoBlock,
       Footnote,
@@ -519,7 +564,7 @@ export function RichTextEditor({
           const node = view.state.schema.nodes[nodeType]?.create({
             src: url,
             align: "center",
-            width: 100,
+            width: DEFAULT_MEDIA_WIDTH,
             caption: "",
           })
           if (!node) return
@@ -552,7 +597,7 @@ export function RichTextEditor({
         .focus()
         .insertContent({
           type: nodeType,
-          attrs: { src: url, align: "center", width: 100, caption: "" },
+          attrs: { src: url, align: "center", width: DEFAULT_MEDIA_WIDTH, caption: "" },
         })
         .run()
     },
@@ -563,6 +608,22 @@ export function RichTextEditor({
     if (!editor) return
     editor.setEditable(!disabled)
   }, [editor, disabled])
+
+  useEffect(() => {
+    if (!editor) return
+    const updateLineHeightValue = () => {
+      const currentLineHeight =
+        editor.getAttributes("paragraph").lineHeight ?? editor.getAttributes("heading").lineHeight ?? null
+      setLineHeightValue(currentLineHeight ?? "default")
+    }
+    updateLineHeightValue()
+    editor.on("selectionUpdate", updateLineHeightValue)
+    editor.on("transaction", updateLineHeightValue)
+    return () => {
+      editor.off("selectionUpdate", updateLineHeightValue)
+      editor.off("transaction", updateLineHeightValue)
+    }
+  }, [editor])
 
   useEffect(() => {
     if (!editor) return
@@ -592,6 +653,16 @@ export function RichTextEditor({
     if (label === null) return
     editor.chain().focus().insertContent({ type: "footnote", attrs: { text, label: label || "¹" } }).run()
   }, [editor])
+
+  const handleLineHeightChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    if (!editor) return
+    const nextValue = event.target.value
+    if (nextValue === "default") {
+      editor.chain().focus().unsetLineHeight().run()
+      return
+    }
+    editor.chain().focus().setLineHeight(nextValue).run()
+  }
 
   const handleImageInput = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -759,6 +830,22 @@ export function RichTextEditor({
           <Button type="button" variant="ghost" size="sm" onClick={insertFootnote} disabled={!editor}>
             <span className="text-xs">Сноска</span>
           </Button>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-slate-500">Интервал</span>
+          <select
+            className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+            value={lineHeightValue}
+            onChange={handleLineHeightChange}
+            disabled={!editor}
+          >
+            <option value="default">По умолчанию</option>
+            {LINE_HEIGHT_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button
