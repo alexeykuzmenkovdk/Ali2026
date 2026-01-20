@@ -7,6 +7,7 @@ import { PrivacyModal } from "@/components/privacy-modal"
 import { BLOG_CATEGORY_LOOKUP } from "@/lib/blog"
 import { getBlogPostBySlug } from "@/lib/store"
 import { normalizeMediaUrl } from "@/lib/media"
+import { BlogImageLightbox } from "@/components/blog-image-lightbox"
 
 export const dynamic = "force-dynamic"
 
@@ -94,16 +95,18 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
         <section className="container mx-auto px-4 pb-16">
           <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
-            {coverImageSrc ? (
-              <img src={coverImageSrc} alt={post.title} className="max-h-[520px] w-full object-contain" />
-            ) : coverVideoSrc ? (
-              <video src={coverVideoSrc} className="max-h-[520px] w-full object-contain" controls />
-            ) : null}
-            <article className="blog-content px-6 py-8">
-              {renderContent(post.content) ?? (
-                <p className="text-base text-gray-700">Скоро здесь появится подробный текст публикации.</p>
-              )}
-            </article>
+            <BlogImageLightbox>
+              {coverImageSrc ? (
+                <img src={coverImageSrc} alt={post.title} className="max-h-[520px] w-full object-contain" />
+              ) : coverVideoSrc ? (
+                <video src={coverVideoSrc} className="max-h-[520px] w-full object-contain" controls />
+              ) : null}
+              <article className="blog-content px-6 py-8">
+                {renderContent(post.content) ?? (
+                  <p className="text-base text-gray-700">Скоро здесь появится подробный текст публикации.</p>
+                )}
+              </article>
+            </BlogImageLightbox>
           </div>
         </section>
       </main>
