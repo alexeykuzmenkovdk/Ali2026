@@ -256,12 +256,18 @@ export function OrderFormModal({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="text-xl">
-            {isSubmitted ? "Заявка успешно отправлена!" : "Заявка на пополнение Alipay"}
+            {isSubmitted
+              ? "Заявка успешно отправлена!"
+              : submissionVariant === "mini-app"
+                ? "Заявка на P2P-сделку"
+                : "Заявка на пополнение Alipay"}
           </DialogTitle>
           <DialogDescription>
             {isSubmitted
               ? `Ваша заявка #${orderNumber} принята. Выберите удобный способ связи для продолжения.`
-              : `Сумма: ${yuanAmount} CNY (${rubleAmount} RUB) по курсу ${exchangeRate} RUB`}
+              : submissionVariant === "mini-app"
+                ? `Сделка будет подтверждена админом в панели. Сумма: ${yuanAmount} CNY (${rubleAmount} RUB).`
+                : `Сумма: ${yuanAmount} CNY (${rubleAmount} RUB) по курсу ${exchangeRate} RUB`}
           </DialogDescription>
         </DialogHeader>
 
