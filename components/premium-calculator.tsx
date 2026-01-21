@@ -250,7 +250,7 @@ export function PremiumCalculator() {
     <>
       <motion.div
         ref={ref}
-        initial={{ opacity: 0, y: 30 }}
+        initial={false}
         animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
         transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
         className="relative overflow-hidden rounded-2xl border-2 border-orange-100 bg-white shadow-xl"
@@ -357,7 +357,7 @@ export function PremiumCalculator() {
                 <span className="relative z-10">Пополнить Alipay на {yuanAmount || "0"} CNY</span>
                 <motion.div
                   className="absolute inset-0 bg-gradient-to-r from-orange-600 to-red-700"
-                  initial={{ x: "-100%" }}
+                  initial={false}
                   animate={{ x: isHovered ? 0 : "-100%" }}
                   transition={{ duration: 0.4, ease: "easeInOut" }}
                 />
