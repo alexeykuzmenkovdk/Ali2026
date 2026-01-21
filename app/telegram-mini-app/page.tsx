@@ -70,8 +70,6 @@ export default function TelegramMiniAppPage() {
   const [initData, setInitData] = useState("")
   const [userLabel, setUserLabel] = useState("Гость")
 
-  const [activeView, setActiveView] = useState<"exchange" | "order">("exchange")
-
   const [amount, setAmount] = useState<string>("1000")
   const [result, setResult] = useState<number | null>(null)
   const [exchangeRate, setExchangeRate] = useState<number>(12.5)
@@ -249,7 +247,6 @@ export default function TelegramMiniAppPage() {
         setOrder(data.order)
         setOrderSteps(data.steps ?? [])
         setOrderMessages(data.messages ?? [])
-        setActiveView("order")
       }
     } catch (error) {
       setOrderError(error instanceof Error ? error.message : "Не удалось получить активную заявку")
@@ -318,7 +315,6 @@ export default function TelegramMiniAppPage() {
       if (!response.ok) {
         if (response.status === 409) {
           await loadActiveOrder()
-          setActiveView("order")
           return
         }
         setOrderError(data.error || "Не удалось создать заявку")
@@ -328,7 +324,6 @@ export default function TelegramMiniAppPage() {
       setOrder(data.order)
       setOrderSteps(data.steps ?? [])
       setOrderMessages(data.messages ?? [])
-      setActiveView("order")
     } catch (error) {
       setOrderError(error instanceof Error ? error.message : "Не удалось создать заявку")
     } finally {
@@ -431,127 +426,106 @@ export default function TelegramMiniAppPage() {
           </Card>
         )}
 
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant={activeView === "exchange" ? "default" : "outline"}
-            className={activeView === "exchange" ? "bg-emerald-500 text-slate-950" : "border-slate-700 text-slate-200"}
-            onClick={() => setActiveView("exchange")}
-          >
-            Обменять юани
-          </Button>
-          <Button
-            variant={activeView === "order" ? "default" : "outline"}
-            className={activeView === "order" ? "bg-emerald-500 text-slate-950" : "border-slate-700 text-slate-200"}
-            onClick={() => setActiveView("order")}
-            disabled={!order}
-          >
-            Комната ордера
-          </Button>
-        </div>
-
-        {activeView === "exchange" && (
-          <Card className="border-slate-800 bg-slate-900/60">
-            <CardHeader>
-              <CardTitle className="text-lg">Обменять юани</CardTitle>
-              <CardDescription className="text-slate-400">
-                Калькулятор считает по логике основного сайта и учитывает динамическую надбавку.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="rounded-lg border border-slate-800 bg-slate-950 px-4 py-3 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-300">Текущий курс</span>
-                  <span className="text-emerald-300">1 CNY = {exchangeRate.toFixed(2)} RUB</span>
-                </div>
-                {!isManual && (
-                  <div className="mt-2 text-xs text-slate-400">Базовый курс ЦБ: {baseRate.toFixed(2)} RUB</div>
-                )}
-                <div className="mt-1 text-xs text-slate-500">
-                  {isManual ? "Ручной курс" : "Автоматический курс"} • Обновлено: {lastUpdated ? formatDate(lastUpdated) : "Загрузка..."}
-                </div>
+        <Card className="border-slate-800 bg-slate-900/60">
+          <CardHeader>
+            <CardTitle className="text-lg">Подать заявку</CardTitle>
+            <CardDescription className="text-slate-400">
+              Заполните сумму и отправьте заявку — она сразу появится в админ-панели.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="rounded-lg border border-slate-800 bg-slate-950 px-4 py-3 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-300">Текущий курс</span>
+                <span className="text-emerald-300">1 CNY = {exchangeRate.toFixed(2)} RUB</span>
               </div>
-
               {!isManual && (
-                <div className="rounded-lg border border-slate-800 bg-slate-950 px-4 py-3 text-xs text-slate-300">
-                  <div className="mb-2 text-slate-400">Курсы по диапазонам:</div>
-                  <div className="grid gap-1">
-                    {exchangeRates.map((tier) => (
-                      <div key={tier.range} className="flex items-center justify-between">
-                        <span>{tier.range}</span>
-                        <span>1 CNY = {tier.rate} RUB</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <div className="mt-2 text-xs text-slate-400">Базовый курс ЦБ: {baseRate.toFixed(2)} RUB</div>
               )}
-
-              <div className="space-y-2">
-                <Label className="text-sm text-slate-300" htmlFor="rub-amount">
-                  Сумма в рублях
-                </Label>
-                <Input
-                  id="rub-amount"
-                  className="border-slate-800 bg-slate-950 text-white"
-                  value={amount}
-                  onChange={(event) => handleAmountChange(event.target.value)}
-                  placeholder="Введите сумму"
-                  disabled={isRateLoading}
-                />
+              <div className="mt-1 text-xs text-slate-500">
+                {isManual ? "Ручной курс" : "Автоматический курс"} • Обновлено: {lastUpdated ? formatDate(lastUpdated) : "Загрузка..."}
               </div>
+            </div>
 
-              {result !== null && (
-                <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
-                  Вы получите: <span className="font-semibold">{result.toFixed(2)} CNY</span>
+            {!isManual && (
+              <div className="rounded-lg border border-slate-800 bg-slate-950 px-4 py-3 text-xs text-slate-300">
+                <div className="mb-2 text-slate-400">Курсы по диапазонам:</div>
+                <div className="grid gap-1">
+                  {exchangeRates.map((tier) => (
+                    <div key={tier.range} className="flex items-center justify-between">
+                      <span>{tier.range}</span>
+                      <span>1 CNY = {tier.rate} RUB</span>
+                    </div>
+                  ))}
                 </div>
-              )}
-
-              <div className="space-y-2">
-                <Label className="text-sm text-slate-300" htmlFor="contact-phone">
-                  Контактный телефон (необязательно)
-                </Label>
-                <Input
-                  id="contact-phone"
-                  className="border-slate-800 bg-slate-950 text-white"
-                  value={contactPhone}
-                  onChange={(event) => setContactPhone(event.target.value)}
-                  placeholder="+7 900 000-00-00"
-                />
               </div>
+            )}
 
-              {orderError && <p className="text-sm text-rose-300">{orderError}</p>}
+            <div className="space-y-2">
+              <Label className="text-sm text-slate-300" htmlFor="rub-amount">
+                Сумма в рублях
+              </Label>
+              <Input
+                id="rub-amount"
+                className="border-slate-800 bg-slate-950 text-white"
+                value={amount}
+                onChange={(event) => handleAmountChange(event.target.value)}
+                placeholder="Введите сумму"
+                disabled={isRateLoading}
+              />
+            </div>
 
-              <Button
-                className="w-full bg-emerald-500 text-slate-950 hover:bg-emerald-400"
-                onClick={handleCreateOrder}
-                disabled={isOrderLoading || !amount || !result || isRateLoading}
-              >
-                {isOrderLoading ? "Создаем заявку..." : "Подать заявку"}
-              </Button>
+            {result !== null && (
+              <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+                Вы получите: <span className="font-semibold">{result.toFixed(2)} CNY</span>
+              </div>
+            )}
 
-              {!isTelegram && (
-                <p className="text-xs text-amber-300">
-                  Для создания заявки откройте мини-приложение в Telegram — иначе запрос не пройдет проверку.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        )}
+            <div className="space-y-2">
+              <Label className="text-sm text-slate-300" htmlFor="contact-phone">
+                Контактный телефон (необязательно)
+              </Label>
+              <Input
+                id="contact-phone"
+                className="border-slate-800 bg-slate-950 text-white"
+                value={contactPhone}
+                onChange={(event) => setContactPhone(event.target.value)}
+                placeholder="+7 900 000-00-00"
+              />
+            </div>
 
-        {activeView === "order" && (
-          <Card className="border-slate-800 bg-slate-900/60">
-            <CardHeader>
-              <CardTitle className="text-lg">Комната ордера</CardTitle>
-              <CardDescription className="text-slate-400">
-                Здесь можно всегда вернуться к заявке и продолжить диалог до исполнения.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {!order ? (
-                <div className="text-sm text-slate-400">
-                  Активной заявки нет. Создайте заявку в разделе «Обменять юани».
-                </div>
-              ) : (
-                <>
+            {orderError && <p className="text-sm text-rose-300">{orderError}</p>}
+
+            <Button
+              className="w-full bg-emerald-500 text-slate-950 hover:bg-emerald-400"
+              onClick={handleCreateOrder}
+              disabled={isOrderLoading || !amount || !result || isRateLoading}
+            >
+              {isOrderLoading ? "Создаем заявку..." : "Подать заявку"}
+            </Button>
+
+            {!isTelegram && (
+              <p className="text-xs text-amber-300">
+                Для создания заявки откройте мини-приложение в Telegram — иначе запрос не пройдет проверку.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-slate-800 bg-slate-900/60">
+          <CardHeader>
+            <CardTitle className="text-lg">Комната ордера</CardTitle>
+            <CardDescription className="text-slate-400">
+              Здесь можно всегда вернуться к заявке и продолжить диалог до исполнения.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {!order ? (
+              <div className="text-sm text-slate-400">
+                Активной заявки нет. Создайте заявку в форме выше, чтобы открыть комнату сделки.
+              </div>
+            ) : (
+              <>
                   <div className="rounded-lg border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-200">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div>
@@ -635,9 +609,8 @@ export default function TelegramMiniAppPage() {
                   </div>
                 </>
               )}
-            </CardContent>
-          </Card>
-        )}
+          </CardContent>
+        </Card>
       </main>
     </div>
   )
