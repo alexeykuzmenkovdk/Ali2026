@@ -40,6 +40,26 @@ export function BuyerServicesContactForm({ isOpen = false }: BuyerServicesContac
 
     try {
       const orderNumber = generateOrderNumber()
+      const normalizedProductLink = productLink.trim()
+      const resolvedProductLink = normalizedProductLink
+        ? normalizedProductLink.startsWith("http://") || normalizedProductLink.startsWith("https://")
+          ? normalizedProductLink
+          : `https://${normalizedProductLink}`
+        : ""
+
+      if (resolvedProductLink) {
+        try {
+          new URL(resolvedProductLink)
+        } catch {
+          toast({
+            title: "Некорректная ссылка",
+            description: "Проверьте ссылку на товар. Укажите полный адрес или домен без пробелов.",
+            variant: "destructive",
+          })
+          setIsSubmitting(false)
+          return
+        }
+      }
 
       const orderData = {
         orderNumber,
@@ -48,7 +68,7 @@ export function BuyerServicesContactForm({ isOpen = false }: BuyerServicesContac
         contactMethod,
         telegramUsername: telegramUsername || undefined,
         message,
-        productLink: productLink || undefined,
+        productLink: resolvedProductLink || undefined,
         type: "buyer-services",
       }
 
@@ -176,7 +196,7 @@ export function BuyerServicesContactForm({ isOpen = false }: BuyerServicesContac
                   onChange={(e) => setProductLink(e.target.value)}
                   placeholder="https://item.taobao.com/item.htm?id=..."
                   className="pr-10"
-                  type="url"
+                  type="text"
                 />
                 <ExternalLink className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               </div>

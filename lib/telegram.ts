@@ -28,6 +28,15 @@ export function parseInitData(initData: string): Record<string, string> {
 }
 
 export function normalizeInitData(initData: string) {
+  if (initData.startsWith("base64:")) {
+    const encoded = initData.slice("base64:".length)
+    try {
+      return Buffer.from(encoded, "base64").toString("utf-8")
+    } catch (error) {
+      console.warn("[Telegram] Failed to decode base64 initData header", error)
+      return initData
+    }
+  }
   try {
     return decodeURIComponent(initData)
   } catch (error) {
