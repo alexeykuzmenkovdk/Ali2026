@@ -187,13 +187,72 @@ export default function TelegramMiniAppPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-10">
-        <div className="space-y-2">
-          <p className="text-sm uppercase tracking-widest text-slate-400">Telegram Mini App</p>
-          <h1 className="text-3xl font-semibold">Обмен валют</h1>
-          <p className="text-slate-300">
-            Рассчитайте сумму обмена юаней по актуальному курсу.
-          </p>
+        <div className="space-y-4 rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-950 via-slate-950 to-emerald-500/10 p-6">
+          <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Mini App · P2P</p>
+          <div className="space-y-2">
+            <h1 className="text-3xl font-semibold">Сделка по обмену CNY в стиле P2P</h1>
+            <p className="text-slate-300">
+              Подайте заявку, получите подтверждение и перейдите в комнату сделки с чатом с админом.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {[
+              { label: "Заявка", value: "1-2 мин" },
+              { label: "Подтверждение", value: "Онлайн" },
+              { label: "Чат", value: "24/7" },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3 text-sm"
+              >
+                <div className="text-slate-400">{item.label}</div>
+                <div className="text-lg font-semibold text-emerald-300">{item.value}</div>
+              </div>
+            ))}
+          </div>
         </div>
+
+        <Card className="border-slate-800 bg-slate-900/60">
+          <CardHeader>
+            <CardTitle className="text-lg">Этапы сделки</CardTitle>
+            <CardDescription className="text-slate-400">
+              Поток как в P2P: заявка → подтверждение → чат → обработка админом.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 text-sm">
+            {[
+              {
+                title: "Подать заявку",
+                description: "Заполните сумму и подтвердите отправку заявки в Telegram.",
+              },
+              {
+                title: "Заявка принята",
+                description: "Сделка фиксируется, и вы сразу попадаете в комнату сделки.",
+              },
+              {
+                title: "Комната сделки",
+                description: "Чат с админом синхронизируется с админ-панелью.",
+              },
+              {
+                title: "Админ обрабатывает",
+                description: "Администратор ведёт заявку через панель и подтверждает шаги.",
+              },
+            ].map((step, index) => (
+              <div
+                key={step.title}
+                className="flex gap-4 rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3"
+              >
+                <div className="flex h-8 w-8 items-center justify-center rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-200">
+                  {index + 1}
+                </div>
+                <div>
+                  <div className="font-medium text-white">{step.title}</div>
+                  <div className="text-slate-400">{step.description}</div>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
 
         <Card className="border-slate-800 bg-slate-900/60">
           <CardHeader>
@@ -222,15 +281,15 @@ export default function TelegramMiniAppPage() {
 
         <Card className="border-slate-800 bg-slate-900/60">
           <CardHeader>
-            <CardTitle className="text-lg">Калькулятор обмена</CardTitle>
+            <CardTitle className="text-lg">Калькулятор P2P</CardTitle>
             <CardDescription className="text-slate-400">
-              Укажите сумму в рублях, чтобы увидеть итоговую сумму в CNY.
+              Укажите сумму в рублях, чтобы увидеть итоговую сумму в CNY по актуальному курсу.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="rounded-lg border border-slate-800 bg-slate-950 px-4 py-3 text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-slate-300">Текущий курс</span>
+              <span className="text-slate-300">Текущий курс</span>
                 <span className="text-emerald-300">1 CNY = {exchangeRate.toFixed(2)} RUB</span>
               </div>
               {!isManual && (
@@ -280,7 +339,7 @@ export default function TelegramMiniAppPage() {
               onClick={() => setIsOrderModalOpen(true)}
               disabled={result === null || !amount}
             >
-              Подать заявку на обмен
+              Подать заявку на сделку
             </Button>
 
             {!isTelegram && (

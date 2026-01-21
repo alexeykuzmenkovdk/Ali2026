@@ -179,10 +179,28 @@ export default function DealRoomPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-10">
-        <div className="space-y-2">
-          <p className="text-sm uppercase tracking-widest text-slate-400">Комната сделки</p>
-          <h1 className="text-3xl font-semibold">Чат по заявке</h1>
-          <p className="text-slate-300">Ведите переписку с администратором прямо в мини-приложении.</p>
+        <div className="space-y-4 rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-950 via-slate-950 to-emerald-500/10 p-6">
+          <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Комната сделки</p>
+          <div className="space-y-2">
+            <h1 className="text-3xl font-semibold">P2P-сделка открыта</h1>
+            <p className="text-slate-300">Общайтесь с админом и отслеживайте статус заявки в реальном времени.</p>
+          </div>
+          <div className="grid gap-3 text-sm sm:grid-cols-3">
+            <div className="rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3">
+              <div className="text-slate-400">Статус</div>
+              <div className="text-lg font-semibold text-emerald-300">
+                {order ? statusLabel(order.status) : "Загрузка"}
+              </div>
+            </div>
+            <div className="rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3">
+              <div className="text-slate-400">Номер заявки</div>
+              <div className="text-lg font-semibold text-white">{order ? `#${order.id.slice(0, 6)}` : "—"}</div>
+            </div>
+            <div className="rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3">
+              <div className="text-slate-400">Чат</div>
+              <div className="text-lg font-semibold text-white">С админом</div>
+            </div>
+          </div>
         </div>
 
         {!isTelegram && (
@@ -201,7 +219,7 @@ export default function DealRoomPage() {
 
         <Card className="border-slate-800 bg-slate-900/60">
           <CardHeader>
-            <CardTitle className="text-lg">Данные заявки</CardTitle>
+            <CardTitle className="text-lg">Детали сделки</CardTitle>
             <CardDescription className="text-slate-400">
               {order ? `Заявка #${order.id.slice(0, 6)} • статус: ${statusLabel(order.status)}` : "Загрузка данных"}
             </CardDescription>
@@ -224,9 +242,9 @@ export default function DealRoomPage() {
 
         <Card className="border-slate-800 bg-slate-900/60">
           <CardHeader>
-            <CardTitle className="text-lg">Переписка</CardTitle>
+            <CardTitle className="text-lg">Чат сделки</CardTitle>
             <CardDescription className="text-slate-400">
-              Сообщения синхронизируются с админ-панелью и Telegram-ботом.
+              Сообщения синхронизируются с админ-панелью, оператор видит вашу заявку.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -275,7 +293,7 @@ export default function DealRoomPage() {
               </Button>
             </div>
             <div className="text-xs text-slate-500">
-              Если нужно закрыть комнату, вернитесь в каталог услуг.
+              Если нужно выйти, вернитесь на главный экран мини-приложения.
               <button
                 type="button"
                 className="ml-2 text-emerald-300 underline-offset-2 hover:underline"
