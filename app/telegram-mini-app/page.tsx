@@ -92,7 +92,18 @@ export default function TelegramMiniAppPage() {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const orderNumber = useMemo(() => (order?.id ? `#${order.id.slice(0, 6)}` : "—"), [order])
-  const initDataHeader = useMemo(() => (initData ? encodeURIComponent(initData) : ""), [initData])
+  const initDataHeader = useMemo(() => {
+    if (!initData) return ""
+    const encoded = encodeURIComponent(initData)
+    try {
+      new Headers({ "x-telegram-init-data": encoded })
+      return encoded
+    } catch (error) {
+      console.warn("[Telegram] Failed to set initData header, fallback to base64", error)
+      const base64Value = typeof window !== "undefined" ? window.btoa(unescape(encodeURIComponent(initData))) : ""
+      return base64Value ? `base64:${base64Value}` : encoded
+    }
+  }, [initData])
 
   useEffect(() => {
     return () => {
