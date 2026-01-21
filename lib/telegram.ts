@@ -28,18 +28,23 @@ export function parseInitData(initData: string): Record<string, string> {
 }
 
 export function validateInitData(initData: string, botToken: string) {
-  const data = parseInitData(initData)
-  const hash = data.hash
+  const params = new URLSearchParams(initData)
+  const hash = params.get("hash")
   if (!hash) return false
-  const dataCheckString = Object.keys(data)
-    .filter((key) => key !== "hash")
-    .sort()
-    .map((key) => `${key}=${data[key]}`)
+  params.delete("hash")
+
+  const dataCheckString = Array.from(params.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => `${k}=${v}`)
     .join("\n")
 
-  const secretKey = crypto.createHash("sha256").update(botToken).digest()
-  const hmac = crypto.createHmac("sha256", secretKey).update(dataCheckString).digest("hex")
-  return hmac === hash
+  const secretKey = crypto.createHmac("sha256", "WebAppData").update(botToken).digest()
+  const computedHash = crypto
+    .createHmac("sha256", secretKey)
+    .update(dataCheckString)
+    .digest("hex")
+
+  return computedHash === hash
 }
 
 export function getTelegramUser(initData: string): TelegramInitData {
@@ -52,16 +57,26 @@ export function getTelegramUser(initData: string): TelegramInitData {
 }
 
 export function requireTelegramInitData(initData: string | null) {
-  const botToken = process.env.TELEGRAM_MINI_APP_BOT_TOKEN ?? process.env.TELEGRAM_BOT_TOKEN
   if (!initData) {
     if (process.env.NODE_ENV === "production") return null
     return { user: { id: 0, username: "demo" } }
   }
-  if (!botToken) {
-    console.warn("[Telegram] Bot token missing, init data will not be validated.")
+
+  const mini = process.env.TELEGRAM_MINI_APP_BOT_TOKEN
+  const main = process.env.TELEGRAM_BOT_TOKEN
+
+  if (!mini && !main) {
+    console.warn("[Telegram] Bot token missing")
+    if (process.env.NODE_ENV === "production") return null
     return getTelegramUser(initData)
   }
-  if (!validateInitData(initData, botToken)) {
+
+  const okMini = mini ? validateInitData(initData, mini) : false
+  const okMain = main ? validateInitData(initData, main) : false
+
+  console.log("[tg] validateInitData mini:", okMini, "main:", okMain)
+
+  if (!okMini && !okMain) {
     if (process.env.NODE_ENV === "production") return null
   }
   return getTelegramUser(initData)
