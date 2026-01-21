@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,6 +17,7 @@ interface ExchangeRateData {
 }
 
 export default function TelegramMiniAppPage() {
+  const router = useRouter()
   const [isTelegram, setIsTelegram] = useState(false)
   const [initData, setInitData] = useState("")
   const [userLabel, setUserLabel] = useState("Гость")
@@ -178,6 +180,9 @@ export default function TelegramMiniAppPage() {
 
   const yuanAmount = result !== null ? result.toFixed(2) : ""
   const rubleAmount = amount || ""
+  const handleOrderCreated = (orderId: string) => {
+    router.push(`/telegram-mini-app/deal/${orderId}`)
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
@@ -293,6 +298,9 @@ export default function TelegramMiniAppPage() {
         yuanAmount={yuanAmount}
         rubleAmount={rubleAmount}
         exchangeRate={exchangeRate}
+        submissionVariant="mini-app"
+        telegramInitData={initData}
+        onOrderCreated={handleOrderCreated}
       />
     </div>
   )
