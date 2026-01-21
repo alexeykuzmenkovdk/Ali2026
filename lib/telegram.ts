@@ -14,10 +14,16 @@ export interface TelegramInitData {
 
 export function parseInitData(initData: string): Record<string, string> {
   return Object.fromEntries(
-    initData
-      .split("&")
-      .map((part) => part.split("=") as [string, string])
-      .map(([key, value]) => [key, decodeURIComponent(value)]),
+    initData.split("&").map((part) => {
+      const separatorIndex = part.indexOf("=")
+      if (separatorIndex === -1) {
+        return [part, ""]
+      }
+      const key = part.slice(0, separatorIndex)
+      const rawValue = part.slice(separatorIndex + 1)
+      const decodedValue = decodeURIComponent(rawValue.replace(/\+/g, " "))
+      return [key, decodedValue]
+    }),
   )
 }
 
