@@ -4,6 +4,13 @@ import Image from "next/image"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 
+const toBase64 = (value: string) => {
+  if (typeof window === "undefined") {
+    return Buffer.from(value).toString("base64")
+  }
+  return window.btoa(unescape(encodeURIComponent(value)))
+}
+
 interface OptimizedImageProps {
   src: string
   alt: string
@@ -54,7 +61,7 @@ export function OptimizedImage({
 
   // Генерация blur placeholder для лучшего UX
   const generateBlurDataURL = (w: number, h: number) => {
-    return `data:image/svg+xml;base64,${Buffer.from(
+    return `data:image/svg+xml;base64,${toBase64(
       `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -64,7 +71,7 @@ export function OptimizedImage({
         </defs>
         <rect width="100%" height="100%" fill="url(#grad)" />
       </svg>`,
-    ).toString("base64")}`
+    )}`
   }
 
   const handleLoad = () => {
