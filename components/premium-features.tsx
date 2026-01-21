@@ -67,7 +67,7 @@ export function PremiumFeatures() {
     <section className="w-full bg-gradient-to-br from-white via-orange-50 to-red-50 py-16 md:py-24 lg:py-32">
       <div className="container px-4 md:px-6">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={false}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           transition={{ duration: 0.6 }}
           className="flex flex-col items-center justify-center space-y-4 text-center"
@@ -85,7 +85,7 @@ export function PremiumFeatures() {
         <motion.div
           ref={ref}
           variants={containerVariants}
-          initial="hidden"
+          initial={false}
           animate={isInView ? "visible" : "hidden"}
           className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3"
         >

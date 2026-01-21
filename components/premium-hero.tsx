@@ -79,7 +79,7 @@ export function PremiumHero({ exchangeRate = 12.5 }: PremiumHeroProps) {
 
       <div className="container relative z-20 px-4 md:px-6 mb-4 md:mb-6">
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
           className="mx-auto max-w-3xl"
@@ -129,7 +129,7 @@ export function PremiumHero({ exchangeRate = 12.5 }: PremiumHeroProps) {
           <div className="lg:col-span-4 flex flex-col items-center lg:items-start">
             {/* Логотип - оптимизированный */}
             <motion.div
-              initial={{ opacity: 0, y: -20 }}
+              initial={false}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
               className="mb-4 w-full max-w-[220px] md:max-w-[250px]"
@@ -148,7 +148,7 @@ export function PremiumHero({ exchangeRate = 12.5 }: PremiumHeroProps) {
 
             {/* Заголовок */}
             <motion.h1
-              initial={{ opacity: 0, y: 20 }}
+              initial={false}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
               className="text-center lg:text-left text-3xl font-bold tracking-tighter md:text-4xl bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent mb-6"
@@ -206,7 +206,7 @@ export function PremiumHero({ exchangeRate = 12.5 }: PremiumHeroProps) {
 
           {/* Центральная колонка с описанием и преимуществами */}
           <motion.div
-            initial="hidden"
+            initial={false}
             animate={controls}
             variants={{
               hidden: { opacity: 0, y: 20 },
@@ -228,7 +228,7 @@ export function PremiumHero({ exchangeRate = 12.5 }: PremiumHeroProps) {
             <div className="mb-8 space-y-4 w-full">
               <motion.div
                 className="flex items-center gap-3"
-                initial={{ opacity: 0, x: -20 }}
+                initial={false}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.3 }}
               >
@@ -243,7 +243,7 @@ export function PremiumHero({ exchangeRate = 12.5 }: PremiumHeroProps) {
 
               <motion.div
                 className="flex items-center gap-3"
-                initial={{ opacity: 0, x: -20 }}
+                initial={false}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.5 }}
               >
@@ -258,7 +258,7 @@ export function PremiumHero({ exchangeRate = 12.5 }: PremiumHeroProps) {
 
               <motion.div
                 className="flex items-center gap-3"
-                initial={{ opacity: 0, x: -20 }}
+                initial={false}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.7 }}
               >
@@ -318,7 +318,7 @@ export function PremiumHero({ exchangeRate = 12.5 }: PremiumHeroProps) {
             {/* Премиальная сноска */}
             <motion.div
               className="mt-6 border-l-4 border-orange-500 pl-4 py-2 bg-orange-50 rounded-r-lg"
-              initial={{ opacity: 0, y: 20 }}
+              initial={false}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1 }}
             >
@@ -332,7 +332,7 @@ export function PremiumHero({ exchangeRate = 12.5 }: PremiumHeroProps) {
           {/* Правая колонка с премиальной карточкой */}
           <div className="lg:col-span-4 flex items-center justify-center">
             <motion.div
-              initial="hidden"
+              initial={false}
               animate={controls}
               variants={{
                 hidden: { opacity: 0, scale: 0.9 },
