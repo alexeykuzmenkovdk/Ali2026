@@ -27,6 +27,15 @@ export function parseInitData(initData: string): Record<string, string> {
   )
 }
 
+export function normalizeInitData(initData: string) {
+  try {
+    return decodeURIComponent(initData)
+  } catch (error) {
+    console.warn("[Telegram] Failed to decode initData header", error)
+    return initData
+  }
+}
+
 export function validateInitData(initData: string, botToken: string) {
   const params = new URLSearchParams(initData)
   const hash = params.get("hash")
@@ -62,22 +71,24 @@ export function requireTelegramInitData(initData: string | null) {
     return { user: { id: 0, username: "demo" } }
   }
 
+  const normalizedInitData = normalizeInitData(initData)
+
   const mini = process.env.TELEGRAM_MINI_APP_BOT_TOKEN
   const main = process.env.TELEGRAM_BOT_TOKEN
 
   if (!mini && !main) {
     console.warn("[Telegram] Bot token missing")
     if (process.env.NODE_ENV === "production") return null
-    return getTelegramUser(initData)
+    return getTelegramUser(normalizedInitData)
   }
 
-  const okMini = mini ? validateInitData(initData, mini) : false
-  const okMain = main ? validateInitData(initData, main) : false
+  const okMini = mini ? validateInitData(normalizedInitData, mini) : false
+  const okMain = main ? validateInitData(normalizedInitData, main) : false
 
   console.log("[tg] validateInitData mini:", okMini, "main:", okMain)
 
   if (!okMini && !okMain) {
     if (process.env.NODE_ENV === "production") return null
   }
-  return getTelegramUser(initData)
+  return getTelegramUser(normalizedInitData)
 }
