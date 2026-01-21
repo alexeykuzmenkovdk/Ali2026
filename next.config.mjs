@@ -64,6 +64,19 @@ const nextConfig = {
           },
         ],
       },
+      {
+        source: '/telegram-mini-app',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'ALLOW-FROM https://web.telegram.org',
+          },
+          {
+            key: 'Content-Security-Policy',
+            value: "frame-ancestors 'self' https://web.telegram.org https://*.telegram.org;",
+          },
+        ],
+      },
     ]
   },
   
