@@ -52,7 +52,7 @@ export function ScrollReveal({
   return (
     <motion.div
       ref={ref}
-      initial="hidden"
+      initial={false}
       animate={controls}
       variants={{
         hidden: { opacity: 0, ...getDirectionOffset() },
