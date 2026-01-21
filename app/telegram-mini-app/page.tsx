@@ -2,9 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { getMarkupForAmount } from "@/lib/exchange-config"
+import { OrderFormModal } from "@/components/order-form-modal"
 
 interface ExchangeRateData {
   rate: string
@@ -26,6 +28,7 @@ export default function TelegramMiniAppPage() {
   const [isManual, setIsManual] = useState<boolean>(false)
   const [isRateLoading, setIsRateLoading] = useState<boolean>(false)
   const [lastUpdated, setLastUpdated] = useState<string>("")
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false)
 
   const mountedRef = useRef(true)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -173,6 +176,9 @@ export default function TelegramMiniAppPage() {
     ]
   }, [baseRate])
 
+  const yuanAmount = result !== null ? result.toFixed(2) : ""
+  const rubleAmount = amount || ""
+
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-10">
@@ -264,6 +270,14 @@ export default function TelegramMiniAppPage() {
               </div>
             )}
 
+            <Button
+              className="h-12 w-full bg-emerald-500 text-slate-950 transition hover:bg-emerald-400"
+              onClick={() => setIsOrderModalOpen(true)}
+              disabled={result === null || !amount}
+            >
+              Подать заявку на обмен
+            </Button>
+
             {!isTelegram && (
               <p className="text-xs text-amber-300">
                 Для получения персонального курса откройте мини-приложение в Telegram.
@@ -272,6 +286,14 @@ export default function TelegramMiniAppPage() {
           </CardContent>
         </Card>
       </main>
+
+      <OrderFormModal
+        isOpen={isOrderModalOpen}
+        onClose={() => setIsOrderModalOpen(false)}
+        yuanAmount={yuanAmount}
+        rubleAmount={rubleAmount}
+        exchangeRate={exchangeRate}
+      />
     </div>
   )
 }
