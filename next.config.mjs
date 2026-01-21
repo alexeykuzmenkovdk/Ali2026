@@ -44,7 +44,28 @@ const nextConfig = {
   headers: async () => {
     return [
       {
-        source: '/(.*)',
+        source: '/telegram-mini-app',
+        headers: [
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'origin-when-cross-origin',
+          },
+          {
+            key: 'Content-Security-Policy',
+            value: "frame-ancestors 'self' https://web.telegram.org https://*.telegram.org;",
+          },
+        ],
+      },
+      {
+        source: '/((?!telegram-mini-app).*)',
         headers: [
           {
             key: 'X-Content-Type-Options',
