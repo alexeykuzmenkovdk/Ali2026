@@ -24,9 +24,21 @@ interface OrderFormModalProps {
   yuanAmount: string
   rubleAmount: string
   exchangeRate: number
+  submissionVariant?: "site" | "mini-app"
+  telegramInitData?: string
+  onOrderCreated?: (orderId: string) => void
 }
 
-export function OrderFormModal({ isOpen, onClose, yuanAmount, rubleAmount, exchangeRate }: OrderFormModalProps) {
+export function OrderFormModal({
+  isOpen,
+  onClose,
+  yuanAmount,
+  rubleAmount,
+  exchangeRate,
+  submissionVariant = "site",
+  telegramInitData,
+  onOrderCreated,
+}: OrderFormModalProps) {
   const { toast } = useToast()
   const [name, setName] = useState("")
   const [contact, setContact] = useState("")
@@ -59,6 +71,68 @@ export function OrderFormModal({ isOpen, onClose, yuanAmount, rubleAmount, excha
     try {
       const newOrderNumber = generateOrderNumber()
       setOrderNumber(newOrderNumber)
+
+      if (submissionVariant === "mini-app") {
+        if (!telegramInitData) {
+          throw new Error("Mini App не получил данные Telegram. Откройте заявку внутри Telegram.")
+        }
+
+        const totalRub = Number.parseFloat(rubleAmount)
+        const totalCny = Number.parseFloat(yuanAmount)
+
+        if (Number.isNaN(totalRub) || Number.isNaN(totalCny)) {
+          throw new Error("Укажите сумму обмена корректно.")
+        }
+
+        const orderPayload = {
+          totalRub,
+          totalCny,
+          rate: exchangeRate,
+          contactPhone: contact,
+          fullName: name,
+        }
+
+        const response = await fetch("/api/orders", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-telegram-init-data": telegramInitData,
+          },
+          body: JSON.stringify(orderPayload),
+        })
+
+        if (response.status === 409) {
+          const activeResponse = await fetch("/api/orders/active", {
+            headers: {
+              "x-telegram-init-data": telegramInitData,
+            },
+          })
+          if (activeResponse.ok) {
+            const activeResult = await activeResponse.json()
+            if (activeResult.order?.id) {
+              onOrderCreated?.(activeResult.order.id)
+              onClose()
+              return
+            }
+          }
+          throw new Error("Активная заявка уже существует. Откройте комнату сделки.")
+        }
+
+        if (!response.ok) {
+          const errorBody = await response.json().catch(() => ({ error: "Ошибка отправки заявки" }))
+          throw new Error(errorBody.error || "Ошибка отправки заявки")
+        }
+
+        const result = await response.json()
+        const createdOrderId = result.order?.id as string | undefined
+        if (!createdOrderId) {
+          throw new Error("Не удалось создать заявку.")
+        }
+
+        onOrderCreated?.(createdOrderId)
+        onClose()
+        return
+      }
 
       const orderData = {
         orderNumber: newOrderNumber,

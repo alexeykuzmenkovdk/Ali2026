@@ -20,6 +20,7 @@ export async function POST(request: Request) {
     totalRub: body.totalRub,
     totalCny: body.totalCny,
     rate: body.rate,
+    fullName: body.fullName,
     contactUsername: telegram.user.username ?? telegram.user.first_name,
     contactPhone: body.contactPhone,
   })

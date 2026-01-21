@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,6 +17,7 @@ interface ExchangeRateData {
 }
 
 export default function TelegramMiniAppPage() {
+  const router = useRouter()
   const [isTelegram, setIsTelegram] = useState(false)
   const [initData, setInitData] = useState("")
   const [userLabel, setUserLabel] = useState("Гость")
@@ -178,6 +180,9 @@ export default function TelegramMiniAppPage() {
 
   const yuanAmount = result !== null ? result.toFixed(2) : ""
   const rubleAmount = amount || ""
+  const handleOrderCreated = (orderId: string) => {
+    router.push(`/telegram-mini-app/deal/${orderId}`)
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
@@ -271,16 +276,16 @@ export default function TelegramMiniAppPage() {
             )}
 
             <Button
-              className="h-12 w-full bg-emerald-500 text-slate-950 transition hover:bg-emerald-400"
+              className="h-12 w-full bg-emerald-500 text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
               onClick={() => setIsOrderModalOpen(true)}
-              disabled={result === null || !amount}
+              disabled={result === null || !amount || !isTelegram || !initData}
             >
               Подать заявку на обмен
             </Button>
 
             {!isTelegram && (
               <p className="text-xs text-amber-300">
-                Для получения персонального курса откройте мини-приложение в Telegram.
+                Для подачи заявки откройте мини-приложение в Telegram.
               </p>
             )}
           </CardContent>
@@ -293,6 +298,9 @@ export default function TelegramMiniAppPage() {
         yuanAmount={yuanAmount}
         rubleAmount={rubleAmount}
         exchangeRate={exchangeRate}
+        submissionVariant="mini-app"
+        telegramInitData={initData}
+        onOrderCreated={handleOrderCreated}
       />
     </div>
   )
