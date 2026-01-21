@@ -94,6 +94,7 @@ export default function TelegramMiniAppPage() {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const orderNumber = useMemo(() => (order?.id ? `#${order.id.slice(0, 6)}` : "—"), [order])
+  const initDataHeader = useMemo(() => (initData ? encodeURIComponent(initData) : ""), [initData])
 
   useEffect(() => {
     return () => {
@@ -235,7 +236,7 @@ export default function TelegramMiniAppPage() {
     try {
       const response = await fetch("/api/orders/active", {
         headers: {
-          "x-telegram-init-data": initData,
+          "x-telegram-init-data": initDataHeader,
         },
       })
       const data = await response.json()
@@ -268,7 +269,7 @@ export default function TelegramMiniAppPage() {
     const refreshMessages = async () => {
       try {
         const response = await fetch(`/api/orders/${order.id}/messages`, {
-          headers: { "x-telegram-init-data": initData },
+          headers: { "x-telegram-init-data": initDataHeader },
         })
         const data = await response.json()
         if (response.ok) {
@@ -282,7 +283,7 @@ export default function TelegramMiniAppPage() {
     refreshMessages()
     const interval = window.setInterval(refreshMessages, 5000)
     return () => window.clearInterval(interval)
-  }, [order?.id, initData])
+  }, [order?.id, initData, initDataHeader])
 
   const handleCreateOrder = async () => {
     setOrderError(null)
@@ -303,7 +304,7 @@ export default function TelegramMiniAppPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-telegram-init-data": initData,
+          "x-telegram-init-data": initDataHeader,
         },
         body: JSON.stringify({
           totalRub: Number.parseFloat(amount),
@@ -350,7 +351,7 @@ export default function TelegramMiniAppPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-telegram-init-data": initData,
+          "x-telegram-init-data": initDataHeader,
         },
         body: JSON.stringify({ text: orderMessageText.trim() }),
       })
