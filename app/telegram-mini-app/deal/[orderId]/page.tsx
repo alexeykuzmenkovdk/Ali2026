@@ -43,7 +43,9 @@ export default function DealRoomPage() {
   const [error, setError] = useState<string | null>(null)
   const [mediaPreview, setMediaPreview] = useState<{ url: string; type: "image" | "video" } | null>(null)
 
+  const chatContainerRef = useRef<HTMLDivElement | null>(null)
   const bottomRef = useRef<HTMLDivElement | null>(null)
+  const [isChatPinnedToBottom, setIsChatPinnedToBottom] = useState(true)
 
   useEffect(() => {
     const telegramWebApp = window.Telegram?.WebApp
@@ -133,9 +135,18 @@ export default function DealRoomPage() {
     return () => window.clearInterval(interval)
   }, [initData, orderId, isChatReadOnly])
 
+  const handleChatScroll = () => {
+    const container = chatContainerRef.current
+    if (!container) return
+    const threshold = 80
+    const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight
+    setIsChatPinnedToBottom(distanceFromBottom < threshold)
+  }
+
   useEffect(() => {
+    if (!isChatPinnedToBottom) return
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
+  }, [messages, isChatPinnedToBottom])
 
   const uploadMessageFile = async (file: File) => {
     const formData = new FormData()
@@ -294,7 +305,11 @@ export default function DealRoomPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="max-h-[520px] space-y-3 overflow-y-auto rounded-lg border border-slate-800 bg-slate-950 p-4 text-base">
+            <div
+              ref={chatContainerRef}
+              onScroll={handleChatScroll}
+              className="max-h-[520px] space-y-3 overflow-y-auto rounded-lg border border-slate-800 bg-slate-950 p-4 text-base"
+            >
               {isLoading ? (
                 <div className="text-slate-400">Загрузка сообщений...</div>
               ) : messages.length === 0 ? (

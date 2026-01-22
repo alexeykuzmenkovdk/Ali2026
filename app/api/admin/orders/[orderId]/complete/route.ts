@@ -19,10 +19,6 @@ export async function POST(request: Request, { params }: { params: { orderId: st
     return NextResponse.json({ error: "Order not found" }, { status: 404 })
   }
 
-  if ("error" in result) {
-    return NextResponse.json({ error: result.error }, { status: 409 })
-  }
-
   const order = await getOrderById(params.orderId)
   if (order) {
     sendMessage({
