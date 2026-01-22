@@ -388,6 +388,12 @@ export default function DealRoomPage() {
               <Input
                 value={messageText}
                 onChange={(event) => setMessageText(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault()
+                    handleSend()
+                  }
+                }}
                 placeholder="Напишите сообщение..."
                 className="border-slate-800 bg-slate-950 text-white"
                 disabled={isSending || isUploading || !initData || isChatReadOnly}
