@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getMarkupForAmount } from "@/lib/exchange-config"
 import { MiniAppOrderFormModal } from "@/components/telegram-mini-app/order-form-modal"
 
@@ -35,6 +36,9 @@ export default function TelegramMiniAppPage() {
   const [activeOrder, setActiveOrder] = useState<ActiveOrder | null>(null)
   const [isActiveOrderLoading, setIsActiveOrderLoading] = useState(false)
   const [activeOrderError, setActiveOrderError] = useState<string | null>(null)
+  const [archivedOrders, setArchivedOrders] = useState<ActiveOrder[]>([])
+  const [isArchiveLoading, setIsArchiveLoading] = useState(false)
+  const [archiveError, setArchiveError] = useState<string | null>(null)
 
   const [amount, setAmount] = useState<string>("1000")
   const [result, setResult] = useState<number | null>(null)
@@ -147,6 +151,51 @@ export default function TelegramMiniAppPage() {
     }
 
     fetchActiveOrder()
+
+    return () => {
+      isMounted = false
+    }
+  }, [initData, isTelegram])
+
+  useEffect(() => {
+    if (!isTelegram || !initData) {
+      setArchivedOrders([])
+      setArchiveError(null)
+      return
+    }
+
+    let isMounted = true
+
+    const fetchArchivedOrders = async () => {
+      try {
+        setIsArchiveLoading(true)
+        setArchiveError(null)
+        const response = await fetch("/api/orders/archive", {
+          headers: {
+            "x-telegram-init-data": initData,
+          },
+        })
+
+        if (!isMounted) return
+
+        if (!response.ok) {
+          throw new Error("Не удалось загрузить архив сделок.")
+        }
+
+        const data = await response.json()
+        setArchivedOrders(data.orders ?? [])
+      } catch (error) {
+        if (isMounted) {
+          setArchiveError(error instanceof Error ? error.message : "Не удалось загрузить архив сделок.")
+        }
+      } finally {
+        if (isMounted) {
+          setIsArchiveLoading(false)
+        }
+      }
+    }
+
+    fetchArchivedOrders()
 
     return () => {
       isMounted = false
@@ -286,50 +335,113 @@ export default function TelegramMiniAppPage() {
           </div>
         </div>
 
-        {(activeOrder || isActiveOrderLoading || activeOrderError) && (
-          <Card className="border-emerald-500/30 bg-emerald-500/10">
-            <CardHeader>
-              <CardTitle className="text-lg">Активная заявка</CardTitle>
-              <CardDescription className="text-emerald-100/80">
-                Если вы уже открывали сделку, вернитесь в комнату и продолжайте общение с админом.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm">
-              {isActiveOrderLoading && <div className="text-emerald-100/80">Проверяем активную заявку...</div>}
-              {!isActiveOrderLoading && activeOrderError && (
-                <div className="rounded-lg border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-amber-100">
-                  {activeOrderError}
-                </div>
-              )}
-              {!isActiveOrderLoading && activeOrder && (
-                <>
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-lg border border-emerald-500/30 bg-slate-950/60 px-3 py-2">
-                      <div className="text-emerald-200/80">Статус</div>
-                      <div className="text-base font-semibold text-white">{statusLabel(activeOrder.status)}</div>
-                    </div>
-                    <div className="rounded-lg border border-emerald-500/30 bg-slate-950/60 px-3 py-2">
-                      <div className="text-emerald-200/80">Номер заявки</div>
-                      <div className="text-base font-semibold text-white">#{activeOrder.id.slice(0, 6)}</div>
-                    </div>
-                    <div className="rounded-lg border border-emerald-500/30 bg-slate-950/60 px-3 py-2">
-                      <div className="text-emerald-200/80">Сумма</div>
-                      <div className="text-base font-semibold text-white">
-                        {activeOrder.totalRub.toLocaleString("ru-RU")} ₽
+        <Tabs defaultValue="active" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 bg-slate-900/70">
+            <TabsTrigger value="active" className="text-sm">
+              Активная сделка
+            </TabsTrigger>
+            <TabsTrigger value="archive" className="text-sm">
+              Архив сделок
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="active">
+            <Card className="border-emerald-500/30 bg-emerald-500/10">
+              <CardHeader>
+                <CardTitle className="text-lg">Активная заявка</CardTitle>
+                <CardDescription className="text-emerald-100/80">
+                  Если вы уже открывали сделку, вернитесь в комнату и продолжайте общение с админом.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 text-sm">
+                {isActiveOrderLoading && <div className="text-emerald-100/80">Проверяем активную заявку...</div>}
+                {!isActiveOrderLoading && activeOrderError && (
+                  <div className="rounded-lg border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-amber-100">
+                    {activeOrderError}
+                  </div>
+                )}
+                {!isActiveOrderLoading && !activeOrder && !activeOrderError && (
+                  <div className="text-emerald-100/80">Активных сделок нет.</div>
+                )}
+                {!isActiveOrderLoading && activeOrder && (
+                  <>
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <div className="rounded-lg border border-emerald-500/30 bg-slate-950/60 px-3 py-2">
+                        <div className="text-emerald-200/80">Статус</div>
+                        <div className="text-base font-semibold text-white">{statusLabel(activeOrder.status)}</div>
+                      </div>
+                      <div className="rounded-lg border border-emerald-500/30 bg-slate-950/60 px-3 py-2">
+                        <div className="text-emerald-200/80">Номер заявки</div>
+                        <div className="text-base font-semibold text-white">#{activeOrder.id.slice(0, 6)}</div>
+                      </div>
+                      <div className="rounded-lg border border-emerald-500/30 bg-slate-950/60 px-3 py-2">
+                        <div className="text-emerald-200/80">Сумма</div>
+                        <div className="text-base font-semibold text-white">
+                          {activeOrder.totalRub.toLocaleString("ru-RU")} ₽
+                        </div>
                       </div>
                     </div>
+                    <Button
+                      className="w-full bg-emerald-500 text-slate-950 transition hover:bg-emerald-400"
+                      onClick={() => router.push(`/telegram-mini-app/deal/${activeOrder.id}`)}
+                    >
+                      Вернуться в комнату сделки
+                    </Button>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="archive">
+            <Card className="border-slate-800 bg-slate-900/60">
+              <CardHeader>
+                <CardTitle className="text-lg">Архив сделок</CardTitle>
+                <CardDescription className="text-slate-400">
+                  Завершённые сделки доступны только для просмотра.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 text-sm">
+                {isArchiveLoading && <div className="text-slate-400">Загрузка архива...</div>}
+                {!isArchiveLoading && archiveError && (
+                  <div className="rounded-lg border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-amber-100">
+                    {archiveError}
                   </div>
-                  <Button
-                    className="w-full bg-emerald-500 text-slate-950 transition hover:bg-emerald-400"
-                    onClick={() => router.push(`/telegram-mini-app/deal/${activeOrder.id}`)}
-                  >
-                    Вернуться в комнату сделки
-                  </Button>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        )}
+                )}
+                {!isArchiveLoading && !archiveError && archivedOrders.length === 0 && (
+                  <div className="text-slate-400">Архив пока пуст.</div>
+                )}
+                {!isArchiveLoading && archivedOrders.length > 0 && (
+                  <div className="space-y-3">
+                    {archivedOrders.map((order) => (
+                      <div
+                        key={order.id}
+                        className="rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <div className="text-slate-200">Заявка #{order.id.slice(0, 6)}</div>
+                            <div className="text-xs text-slate-400">
+                              {statusLabel(order.status)} • {formatDate(order.createdAt)}
+                            </div>
+                          </div>
+                          <div className="text-right text-sm text-slate-200">
+                            {order.totalRub.toLocaleString("ru-RU")} ₽
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          className="mt-3 w-full border-slate-700 text-slate-100 hover:bg-slate-800"
+                          onClick={() => router.push(`/telegram-mini-app/deal/${order.id}`)}
+                        >
+                          Смотреть детали
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         <Card className="border-slate-800 bg-slate-900/60">
           <CardHeader>

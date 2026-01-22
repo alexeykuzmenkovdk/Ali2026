@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 type OrderStatus = "CREATED" | "IN_PROGRESS" | "COMPLETED" | "CANCELED"
 
@@ -40,6 +41,7 @@ export default function DealRoomPage() {
   const [isSending, setIsSending] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [mediaPreview, setMediaPreview] = useState<{ url: string; type: "image" | "video" } | null>(null)
 
   const bottomRef = useRef<HTMLDivElement | null>(null)
 
@@ -55,8 +57,8 @@ export default function DealRoomPage() {
     setInitData("")
   }, [])
 
-  const fetchActiveOrder = async (activeOrderId: string, initDataHeader: string) => {
-    const response = await fetch("/api/orders/active", {
+  const fetchOrderDetails = async (currentOrderId: string, initDataHeader: string) => {
+    const response = await fetch(`/api/orders/${currentOrderId}`, {
       headers: {
         "x-telegram-init-data": initDataHeader,
       },
@@ -68,11 +70,7 @@ export default function DealRoomPage() {
 
     const data = await response.json()
     if (!data.order) {
-      throw new Error("Активная заявка не найдена.")
-    }
-
-    if (data.order.id !== activeOrderId) {
-      throw new Error("Неверный номер заявки.")
+      throw new Error("Заявка не найдена.")
     }
 
     setOrder(data.order)
@@ -104,7 +102,7 @@ export default function DealRoomPage() {
     const load = async () => {
       try {
         setIsLoading(true)
-        await fetchActiveOrder(orderId, initData)
+        await fetchOrderDetails(orderId, initData)
         setError(null)
       } catch (loadError) {
         if (isActive) {
@@ -124,14 +122,16 @@ export default function DealRoomPage() {
     }
   }, [orderId, initData])
 
+  const isChatReadOnly = order ? order.status === "COMPLETED" || order.status === "CANCELED" : false
+
   useEffect(() => {
-    if (!initData || !orderId) return
+    if (!initData || !orderId || isChatReadOnly) return
     const interval = window.setInterval(() => {
       fetchMessages(orderId, initData).catch(() => null)
     }, 5000)
 
     return () => window.clearInterval(interval)
-  }, [initData, orderId])
+  }, [initData, orderId, isChatReadOnly])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -157,7 +157,7 @@ export default function DealRoomPage() {
   }
 
   const handleSend = async () => {
-    if (!initData || !orderId) return
+    if (!initData || !orderId || isChatReadOnly) return
     const trimmedText = messageText.trim()
     if (!trimmedText && !messageFile) return
     setIsSending(true)
@@ -200,6 +200,13 @@ export default function DealRoomPage() {
     return "file"
   }
 
+  const openMediaPreview = (fileUrl: string) => {
+    const type = resolveFileType(fileUrl)
+    if (type === "image" || type === "video") {
+      setMediaPreview({ url: fileUrl, type })
+    }
+  }
+
   const statusLabel = (status: OrderStatus | undefined) => {
     switch (status) {
       case "CREATED":
@@ -217,7 +224,7 @@ export default function DealRoomPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
-      <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-10">
+      <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-10">
         <div className="space-y-4 rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-950 via-slate-950 to-emerald-500/10 p-6">
           <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Комната сделки</p>
           <div className="space-y-2">
@@ -287,7 +294,7 @@ export default function DealRoomPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="max-h-[360px] space-y-3 overflow-y-auto rounded-lg border border-slate-800 bg-slate-950 p-4 text-sm">
+            <div className="max-h-[520px] space-y-3 overflow-y-auto rounded-lg border border-slate-800 bg-slate-950 p-4 text-base">
               {isLoading ? (
                 <div className="text-slate-400">Загрузка сообщений...</div>
               ) : messages.length === 0 ? (
@@ -307,9 +314,19 @@ export default function DealRoomPage() {
                     >
                       {message.text && <div className="whitespace-pre-wrap">{message.text}</div>}
                       {message.fileUrl && (
-                        <div className="mt-2">
+                        <div className="mt-2 space-y-2">
                           {resolveFileType(message.fileUrl) === "image" ? (
-                            <img src={message.fileUrl} alt="Вложение" className="max-h-48 rounded-md border" />
+                            <button
+                              type="button"
+                              onClick={() => openMediaPreview(message.fileUrl ?? "")}
+                              className="block"
+                            >
+                              <img
+                                src={message.fileUrl}
+                                alt="Вложение"
+                                className="max-h-48 rounded-md border transition hover:opacity-90"
+                              />
+                            </button>
                           ) : resolveFileType(message.fileUrl) === "video" ? (
                             <video src={message.fileUrl} controls className="max-h-48 w-full rounded-md border" />
                           ) : (
@@ -322,6 +339,21 @@ export default function DealRoomPage() {
                               Открыть файл
                             </a>
                           )}
+                          <div className="flex flex-wrap gap-3 text-xs">
+                            {(resolveFileType(message.fileUrl) === "image" ||
+                              resolveFileType(message.fileUrl) === "video") && (
+                              <button
+                                type="button"
+                                onClick={() => openMediaPreview(message.fileUrl ?? "")}
+                                className="text-emerald-200 underline"
+                              >
+                                Открыть
+                              </button>
+                            )}
+                            <a href={message.fileUrl} download className="text-emerald-200 underline">
+                              Скачать
+                            </a>
+                          </div>
                         </div>
                       )}
                       <div className="mt-1 text-[10px] text-slate-400">
@@ -343,24 +375,29 @@ export default function DealRoomPage() {
                 onChange={(event) => setMessageText(event.target.value)}
                 placeholder="Напишите сообщение..."
                 className="border-slate-800 bg-slate-950 text-white"
-                disabled={isSending || isUploading || !initData}
+                disabled={isSending || isUploading || !initData || isChatReadOnly}
               />
               <Input
                 type="file"
                 accept="image/*,video/*,application/pdf"
                 onChange={(event) => setMessageFile(event.target.files?.[0] ?? null)}
                 className="border-slate-800 bg-slate-950 text-white file:text-white"
-                disabled={isSending || isUploading || !initData}
+                disabled={isSending || isUploading || !initData || isChatReadOnly}
               />
               <Button
                 onClick={handleSend}
-                disabled={isSending || isUploading || (!messageText.trim() && !messageFile) || !initData}
+                disabled={
+                  isSending || isUploading || (!messageText.trim() && !messageFile) || !initData || isChatReadOnly
+                }
               >
                 {isSending || isUploading ? "Отправка..." : "Отправить"}
               </Button>
             </div>
             {messageFile && (
               <div className="text-xs text-slate-400">Прикреплено: {messageFile.name}</div>
+            )}
+            {isChatReadOnly && (
+              <div className="text-xs text-slate-400">Сделка закрыта, чат доступен только для просмотра.</div>
             )}
             <div className="text-xs text-slate-500">
               Если нужно выйти, вернитесь на главный экран мини-приложения.
@@ -375,6 +412,34 @@ export default function DealRoomPage() {
           </CardContent>
         </Card>
       </main>
+
+      <Dialog open={!!mediaPreview} onOpenChange={(open) => !open && setMediaPreview(null)}>
+        <DialogContent className="max-w-3xl bg-slate-950 text-white">
+          <DialogHeader>
+            <DialogTitle>Просмотр вложения</DialogTitle>
+          </DialogHeader>
+          {mediaPreview?.type === "image" ? (
+            <img src={mediaPreview.url} alt="Вложение" className="max-h-[70vh] w-full rounded-md object-contain" />
+          ) : mediaPreview?.type === "video" ? (
+            <video src={mediaPreview.url} controls className="max-h-[70vh] w-full rounded-md" />
+          ) : null}
+          {mediaPreview && (
+            <div className="mt-4 flex flex-wrap gap-4 text-sm">
+              <a
+                href={mediaPreview.url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-emerald-200 underline"
+              >
+                Открыть в новой вкладке
+              </a>
+              <a href={mediaPreview.url} download className="text-emerald-200 underline">
+                Скачать
+              </a>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import {
   LogOut,
   RefreshCw,
@@ -87,6 +88,8 @@ export default function AdminDashboard() {
   const [isMessageSending, setIsMessageSending] = useState<boolean>(false)
   const [isMessageUploading, setIsMessageUploading] = useState<boolean>(false)
   const [isQuickActionSending, setIsQuickActionSending] = useState<boolean>(false)
+  const [isOrderClosing, setIsOrderClosing] = useState<boolean>(false)
+  const [mediaPreview, setMediaPreview] = useState<{ url: string; type: "image" | "video" } | null>(null)
 
   const [showcaseItems, setShowcaseItems] = useState<ShowcaseItem[]>([])
   const [showcaseTitle, setShowcaseTitle] = useState<string>("")
@@ -332,6 +335,13 @@ export default function AdminDashboard() {
     return "file"
   }
 
+  const openMediaPreview = (fileUrl: string) => {
+    const type = resolveMessageFileType(fileUrl)
+    if (type === "image" || type === "video") {
+      setMediaPreview({ url: fileUrl, type })
+    }
+  }
+
   const sendOrderMessage = async () => {
     const sessionToken = checkAuthBeforeRequest()
     if (!sessionToken || !selectedOrderId) return
@@ -413,6 +423,38 @@ export default function AdminDashboard() {
     } finally {
       if (mountedRef.current) {
         setIsQuickActionSending(false)
+      }
+    }
+  }
+
+  const closeOrder = async () => {
+    const sessionToken = checkAuthBeforeRequest()
+    if (!sessionToken || !selectedOrderId) return
+    if (!window.confirm("Закрыть сделку и переместить в архив?")) return
+
+    setIsOrderClosing(true)
+    try {
+      const response = await fetch(`/api/admin/orders/${selectedOrderId}/archive?token=${sessionToken}`, {
+        method: "POST",
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error ?? "Не удалось закрыть заявку")
+      }
+      toast({
+        title: "Сделка закрыта",
+        description: "Заявка перемещена в архив, клиент может создать новую.",
+      })
+      await fetchOrders()
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: error instanceof Error ? error.message : "Не удалось закрыть сделку",
+        variant: "destructive",
+      })
+    } finally {
+      if (mountedRef.current) {
+        setIsOrderClosing(false)
       }
     }
   }
@@ -964,6 +1006,8 @@ export default function AdminDashboard() {
     return `${dateLabel} • ${amountLabel} • ${contactLabel}`
   }
 
+  const selectedOrder = orders.find((order) => order.id === selectedOrderId)
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -1076,13 +1120,30 @@ export default function AdminDashboard() {
                           Клиент:{" "}
                           <span className="font-medium">
                             {(() => {
-                              const currentOrder = orders.find((order) => order.id === selectedOrderId)
-                              if (!currentOrder) return "-"
-                              if (currentOrder.contactUsername) return `@${currentOrder.contactUsername}`
-                              if (currentOrder.contactPhone) return currentOrder.contactPhone
-                              return `ID ${currentOrder.userId}`
+                              if (!selectedOrder) return "-"
+                              if (selectedOrder.contactUsername) return `@${selectedOrder.contactUsername}`
+                              if (selectedOrder.contactPhone) return selectedOrder.contactPhone
+                              return `ID ${selectedOrder.userId}`
                             })()}
                           </span>
+                        </div>
+                        <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-gray-600">
+                          <span>
+                            Статус: <span className="font-medium">{selectedOrder?.status ?? "—"}</span>
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={closeOrder}
+                            disabled={
+                              !selectedOrder ||
+                              isOrderClosing ||
+                              selectedOrder.status === "COMPLETED" ||
+                              selectedOrder.status === "CANCELED"
+                            }
+                          >
+                            {isOrderClosing ? "Закрытие..." : "Закрыть и в архив"}
+                          </Button>
                         </div>
                       </div>
 
@@ -1138,13 +1199,19 @@ export default function AdminDashboard() {
                               </div>
                               {message.text && <div className="mt-1 whitespace-pre-wrap">{message.text}</div>}
                               {message.fileUrl && (
-                                <div className="mt-2">
+                                <div className="mt-2 space-y-2">
                                   {resolveMessageFileType(message.fileUrl) === "image" ? (
-                                    <img
-                                      src={message.fileUrl}
-                                      alt="Вложение"
-                                      className="max-h-48 rounded-md border"
-                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => openMediaPreview(message.fileUrl ?? "")}
+                                      className="block"
+                                    >
+                                      <img
+                                        src={message.fileUrl}
+                                        alt="Вложение"
+                                        className="max-h-48 rounded-md border transition hover:opacity-90"
+                                      />
+                                    </button>
                                   ) : resolveMessageFileType(message.fileUrl) === "video" ? (
                                     <video
                                       src={message.fileUrl}
@@ -1161,6 +1228,21 @@ export default function AdminDashboard() {
                                       Открыть файл
                                     </a>
                                   )}
+                                  <div className="flex flex-wrap gap-3 text-xs">
+                                    {(resolveMessageFileType(message.fileUrl) === "image" ||
+                                      resolveMessageFileType(message.fileUrl) === "video") && (
+                                      <button
+                                        type="button"
+                                        onClick={() => openMediaPreview(message.fileUrl ?? "")}
+                                        className="text-orange-600 underline"
+                                      >
+                                        Открыть
+                                      </button>
+                                    )}
+                                    <a href={message.fileUrl} download className="text-orange-600 underline">
+                                      Скачать
+                                    </a>
+                                  </div>
                                 </div>
                               )}
                             </div>
@@ -1773,6 +1855,34 @@ export default function AdminDashboard() {
 
         </Tabs>
       </main>
+
+      <Dialog open={!!mediaPreview} onOpenChange={(open) => !open && setMediaPreview(null)}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Просмотр вложения</DialogTitle>
+          </DialogHeader>
+          {mediaPreview?.type === "image" ? (
+            <img src={mediaPreview.url} alt="Вложение" className="max-h-[70vh] w-full rounded-md object-contain" />
+          ) : mediaPreview?.type === "video" ? (
+            <video src={mediaPreview.url} controls className="max-h-[70vh] w-full rounded-md" />
+          ) : null}
+          {mediaPreview && (
+            <div className="mt-4 flex flex-wrap gap-4 text-sm">
+              <a
+                href={mediaPreview.url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-orange-600 underline"
+              >
+                Открыть в новой вкладке
+              </a>
+              <a href={mediaPreview.url} download className="text-orange-600 underline">
+                Скачать
+              </a>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
