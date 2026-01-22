@@ -32,12 +32,27 @@ export async function POST(request: Request, { params }: { params: { orderId: st
     fileUrl: body.fileUrl,
   })
 
+  const origin = new URL(request.url).origin
+  const fileLink = body.fileUrl ? new URL(body.fileUrl, origin).toString() : null
+
+  const clientNoticeLines = [
+    `✉️ Новое сообщение в комнате сделки #${params.orderId.slice(0, 6)}`,
+    body.text ?? "",
+    fileLink ? `📎 Файл: ${fileLink}` : "",
+    "Вернуться в комнату сделки: t.me/Manivlbot/alipayfast",
+  ].filter(Boolean)
+
+  sendMessage({
+    chat_id: telegram.user.id,
+    text: clientNoticeLines.join("\n"),
+  }).catch(() => null)
+
   const adminId = process.env.ADMIN_USER_ID
   if (adminId) {
     const noticeLines = [
       `✉️ Новое сообщение по заявке #${params.orderId.slice(0, 6)}`,
       body.text ?? "",
-      body.fileUrl ? `📎 Файл: ${body.fileUrl}` : "",
+      fileLink ? `📎 Файл: ${fileLink}` : "",
     ].filter(Boolean)
     sendMessage({
       chat_id: Number(adminId),

@@ -31,12 +31,28 @@ export async function POST(request: Request, { params }: { params: { orderId: st
     fileUrl: body.fileUrl,
   })
 
+  const origin = new URL(request.url).origin
+  const fileLink = body.fileUrl ? new URL(body.fileUrl, origin).toString() : null
+
+  const adminId = process.env.ADMIN_USER_ID
+  if (adminId) {
+    const adminNoticeLines = [
+      `✉️ Сообщение отправлено клиенту по заявке #${params.orderId.slice(0, 6)}`,
+      body.text ?? "",
+      fileLink ? `📎 Файл: ${fileLink}` : "",
+    ].filter(Boolean)
+    sendMessage({
+      chat_id: Number(adminId),
+      text: adminNoticeLines.join("\n"),
+    }).catch(() => null)
+  }
+
   if (order) {
     const noticeLines = [
       `✉️ Оператор ответил по заявке #${params.orderId.slice(0, 6)}`,
       body.text ?? "",
-      body.fileUrl ? `📎 Файл: ${body.fileUrl}` : "",
-      "Откройте мини-приложение для продолжения.",
+      fileLink ? `📎 Файл: ${fileLink}` : "",
+      "Вернуться в комнату сделки: t.me/Manivlbot/alipayfast",
     ].filter(Boolean)
     sendMessage({
       chat_id: order.userId,
