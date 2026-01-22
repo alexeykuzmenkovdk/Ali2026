@@ -337,14 +337,14 @@ export default function TelegramMiniAppPage() {
             <Button
               className="h-12 w-full bg-emerald-500 text-slate-950 transition hover:bg-emerald-400"
               onClick={() => setIsOrderModalOpen(true)}
-              disabled={result === null || !amount}
+              disabled={result === null || !amount || !isTelegram}
             >
               Подать заявку на сделку
             </Button>
 
             {!isTelegram && (
               <p className="text-xs text-amber-300">
-                Для получения персонального курса откройте мини-приложение в Telegram.
+                Отправка заявки доступна только внутри Telegram. Откройте мини-приложение, чтобы продолжить.
               </p>
             )}
           </CardContent>
