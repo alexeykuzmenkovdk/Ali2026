@@ -96,6 +96,10 @@ export function MiniAppOrderFormModal({
       }
 
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error("Telegram не подтвердил данные. Откройте заявку внутри мини-приложения.")
+        }
+
         const errorBody = await response.json().catch(() => ({ error: "Ошибка отправки заявки" }))
         throw new Error(errorBody.error || "Ошибка отправки заявки")
       }
@@ -117,58 +121,66 @@ export function MiniAppOrderFormModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && resetForm()}>
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
-          <DialogTitle className="text-xl">Новая заявка в мини-приложении</DialogTitle>
+          <DialogTitle className="text-xl">Заявка на сделку</DialogTitle>
           <DialogDescription>
-            Администратор получит вашу заявку, и вы сразу перейдете в комнату сделки.
+            Проверьте параметры сделки, заполните контакты и отправьте заявку администратору.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+        <div className="rounded-xl border border-emerald-200/40 bg-emerald-50 px-4 py-3 text-sm text-emerald-950">
           <div className="flex items-center justify-between">
-            <span className="text-slate-500">Сумма сделки</span>
-            <span className="font-semibold text-slate-900">
+            <span className="text-emerald-700">Сумма сделки</span>
+            <span className="font-semibold">
               {yuanAmount} CNY · {rubleAmount} RUB
             </span>
           </div>
-          <div className="mt-1 text-xs text-slate-500">Курс: 1 CNY = {exchangeRate.toFixed(2)} RUB</div>
+          <div className="mt-1 text-xs text-emerald-700">
+            Курс сделки: 1 CNY = {exchangeRate.toFixed(2)} RUB
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid gap-2">
-            <Label htmlFor="mini-full-name">Имя и фамилия</Label>
-            <Input
-              id="mini-full-name"
-              value={fullName}
-              onChange={(event) => setFullName(event.target.value)}
-              placeholder="Например, Иван Иванов"
-              required
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="space-y-4 rounded-xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
+            <div className="grid gap-2">
+              <Label htmlFor="mini-full-name">Имя и фамилия</Label>
+              <Input
+                id="mini-full-name"
+                value={fullName}
+                onChange={(event) => setFullName(event.target.value)}
+                placeholder="Например, Иван Иванов"
+                required
+              />
+            </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="mini-contact-phone">Телефон для связи</Label>
-            <Input
-              id="mini-contact-phone"
-              value={contactPhone}
-              onChange={(event) => setContactPhone(event.target.value)}
-              placeholder="+7 900 000-00-00"
-              required
-            />
+            <div className="grid gap-2">
+              <Label htmlFor="mini-contact-phone">Телефон для связи</Label>
+              <Input
+                id="mini-contact-phone"
+                value={contactPhone}
+                onChange={(event) => setContactPhone(event.target.value)}
+                placeholder="+7 900 000-00-00"
+                required
+              />
+            </div>
+
+            <p className="text-xs text-slate-500">
+              Контакты нужны, чтобы администратор быстро подтвердил сделку и написал вам.
+            </p>
           </div>
 
           {error && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
 
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-3">
             <Button type="button" variant="outline" onClick={resetForm}>
               Отмена
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" className="bg-emerald-500 text-slate-950 hover:bg-emerald-400" disabled={isSubmitting}>
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Отправка...
+                  Отправляем заявку...
                 </>
               ) : (
                 "Отправить заявку"
