@@ -85,7 +85,6 @@ export default function RootLayout({
     <html lang="ru" className={`${montserrat.variable}`}>
       <head>
         <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
-        <link rel="canonical" href="https://alipayfast.ru" />
         <meta name="geo.region" content="RU-PRI" />
         <meta name="geo.placename" content="Владивосток, Приморский край" />
         <meta name="geo.position" content="43.1056;131.8735" />
