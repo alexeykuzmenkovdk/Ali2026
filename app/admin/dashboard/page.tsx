@@ -252,11 +252,13 @@ export default function AdminDashboard() {
       .replace(/^-|-$/g, "")
 
 
-  const fetchOrders = async () => {
+  const fetchOrders = async ({ silent = false }: { silent?: boolean } = {}) => {
     const sessionToken = checkAuthBeforeRequest()
     if (!sessionToken) return
 
-    setIsOrdersLoading(true)
+    if (!silent) {
+      setIsOrdersLoading(true)
+    }
     try {
       const response = await fetch(`/api/admin/orders?token=${sessionToken}`)
       const data = await response.json()
@@ -268,7 +270,7 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.error("Orders fetch error:", error)
-      if (mountedRef.current) {
+      if (mountedRef.current && !silent) {
         toast({
           title: "Ошибка",
           description: "Не удалось загрузить список заявок",
@@ -276,17 +278,19 @@ export default function AdminDashboard() {
         })
       }
     } finally {
-      if (mountedRef.current) {
+      if (mountedRef.current && !silent) {
         setIsOrdersLoading(false)
       }
     }
   }
 
-  const fetchOrderMessages = async (orderId: string) => {
+  const fetchOrderMessages = async (orderId: string, { silent = false }: { silent?: boolean } = {}) => {
     const sessionToken = checkAuthBeforeRequest()
     if (!sessionToken) return
 
-    setIsMessagesLoading(true)
+    if (!silent) {
+      setIsMessagesLoading(true)
+    }
     try {
       const response = await fetch(`/api/admin/orders/${orderId}/messages?token=${sessionToken}`)
       const data = await response.json()
@@ -295,7 +299,7 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.error("Messages fetch error:", error)
-      if (mountedRef.current) {
+      if (mountedRef.current && !silent) {
         toast({
           title: "Ошибка",
           description: "Не удалось загрузить сообщения по заявке",
@@ -303,7 +307,7 @@ export default function AdminDashboard() {
         })
       }
     } finally {
-      if (mountedRef.current) {
+      if (mountedRef.current && !silent) {
         setIsMessagesLoading(false)
       }
     }
@@ -990,7 +994,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (activeTab === "orders") {
       fetchOrders()
-      const interval = window.setInterval(fetchOrders, 10000)
+      const interval = window.setInterval(() => fetchOrders({ silent: true }), 10000)
       return () => window.clearInterval(interval)
     }
     if (activeTab === "showcase") {
@@ -1004,7 +1008,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (!selectedOrderId || activeTab !== "orders") return
     fetchOrderMessages(selectedOrderId)
-    const interval = window.setInterval(() => fetchOrderMessages(selectedOrderId), 5000)
+    const interval = window.setInterval(() => fetchOrderMessages(selectedOrderId, { silent: true }), 5000)
     return () => window.clearInterval(interval)
   }, [selectedOrderId, activeTab])
 
