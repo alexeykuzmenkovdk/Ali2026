@@ -310,6 +310,18 @@ export default function TelegramMiniAppPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-10">
+        <div className="space-y-4 rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-950 via-slate-950 to-emerald-500/10 p-6">
+          <p className="text-xs uppercase tracking-[0.3em] text-slate-400">AlipayFast · Premium</p>
+          <div className="space-y-2">
+            <h1 className="text-3xl font-semibold">
+              Сервис по быстрому пополнению Alipay и WeChat для клиентов AlipayFast
+            </h1>
+            <p className="text-slate-300">
+              Быстрые заявки, прозрачный курс и сопровождение админом в одной комфортной комнате сделки.
+            </p>
+          </div>
+        </div>
+
         <Tabs defaultValue="active" className="w-full">
           <TabsList className="grid w-full grid-cols-2 bg-slate-900/70">
             <TabsTrigger value="active" className="text-sm">
@@ -489,18 +501,6 @@ export default function TelegramMiniAppPage() {
             )}
           </CardContent>
         </Card>
-
-        <div className="space-y-4 rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-950 via-slate-950 to-emerald-500/10 p-6">
-          <p className="text-xs uppercase tracking-[0.3em] text-slate-400">AlipayFast · Premium</p>
-          <div className="space-y-2">
-            <h1 className="text-3xl font-semibold">
-              Сервис по быстрому пополнению Alipay и WeChat для клиентов AlipayFast
-            </h1>
-            <p className="text-slate-300">
-              Быстрые заявки, прозрачный курс и сопровождение админом в одной комфортной комнате сделки.
-            </p>
-          </div>
-        </div>
 
         <Card className="border-slate-800 bg-slate-900/60">
           <CardHeader>
