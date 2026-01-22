@@ -93,6 +93,7 @@ export default function AdminDashboard() {
   const [isOrderChatPinnedToBottom, setIsOrderChatPinnedToBottom] = useState<boolean>(true)
   const orderChatContainerRef = useRef<HTMLDivElement | null>(null)
   const orderChatBottomRef = useRef<HTMLDivElement | null>(null)
+  const selectedOrderIdRef = useRef<string>("")
 
   const [showcaseItems, setShowcaseItems] = useState<ShowcaseItem[]>([])
   const [showcaseTitle, setShowcaseTitle] = useState<string>("")
@@ -149,6 +150,10 @@ export default function AdminDashboard() {
       mountedRef.current = false
     }
   }, [])
+
+  useEffect(() => {
+    selectedOrderIdRef.current = selectedOrderId
+  }, [selectedOrderId])
 
   // Проверка аутентификации при загрузке стран��цы
   useEffect(() => {
@@ -264,8 +269,11 @@ export default function AdminDashboard() {
       const data = await response.json()
       if (response.ok && mountedRef.current) {
         setOrders(data.orders ?? [])
-        if (!selectedOrderId && data.orders?.length > 0) {
-          setSelectedOrderId(data.orders[0].id)
+        const availableOrders = data.orders ?? []
+        const hasSelectedOrder =
+          selectedOrderIdRef.current && availableOrders.some((order) => order.id === selectedOrderIdRef.current)
+        if (!hasSelectedOrder && availableOrders.length > 0) {
+          setSelectedOrderId(availableOrders[0].id)
         }
       }
     } catch (error) {
