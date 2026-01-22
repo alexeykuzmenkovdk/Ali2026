@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { getActiveOrder, listOrderMessages, listOrderSteps } from "@/lib/store"
+import { listActiveOrders } from "@/lib/store"
 import { requireTelegramInitData } from "@/lib/telegram"
 
 export async function GET(request: Request) {
@@ -9,12 +9,6 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const order = await getActiveOrder(telegram.user.id)
-  if (!order) {
-    return NextResponse.json({ order: null })
-  }
-
-  const steps = await listOrderSteps(order.id)
-  const messages = await listOrderMessages(order.id)
-  return NextResponse.json({ order, steps, messages })
+  const orders = await listActiveOrders(telegram.user.id)
+  return NextResponse.json({ orders })
 }

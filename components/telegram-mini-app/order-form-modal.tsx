@@ -88,11 +88,15 @@ export function MiniAppOrderFormModal({
           },
         })
         const activeResult = await activeResponse.json()
-        if (activeResult.order?.id) {
-          onOrderCreated(activeResult.order.id)
+        if (Array.isArray(activeResult.orders) && activeResult.orders.length === 1) {
+          onOrderCreated(activeResult.orders[0].id)
           onClose()
           return
         }
+        if (Array.isArray(activeResult.orders) && activeResult.orders.length >= 2) {
+          throw new Error("У вас уже есть две активные заявки. Откройте одну из них в разделе активных сделок.")
+        }
+        throw new Error("У вас уже есть активная заявка.")
       }
 
       if (!response.ok) {

@@ -1,6 +1,7 @@
 interface SendMessagePayload {
   chat_id: number
   text: string
+  parse_mode?: "HTML" | "Markdown" | "MarkdownV2"
   reply_markup?: unknown
 }
 

@@ -87,8 +87,11 @@ export default function AdminDashboard() {
   const [isMessagesLoading, setIsMessagesLoading] = useState<boolean>(false)
   const [isMessageSending, setIsMessageSending] = useState<boolean>(false)
   const [isMessageUploading, setIsMessageUploading] = useState<boolean>(false)
-  const [isQuickActionSending, setIsQuickActionSending] = useState<boolean>(false)
+  const [isPaymentDetailsSending, setIsPaymentDetailsSending] = useState<boolean>(false)
   const [isOrderClosing, setIsOrderClosing] = useState<boolean>(false)
+  const [paymentDetails, setPaymentDetails] = useState<string>("")
+  const [paymentBank, setPaymentBank] = useState<string>("")
+  const [paymentAmount, setPaymentAmount] = useState<string>("")
   const [mediaPreview, setMediaPreview] = useState<{ url: string; type: "image" | "video" } | null>(null)
   const [isOrderChatPinnedToBottom, setIsOrderChatPinnedToBottom] = useState<boolean>(true)
   const orderChatContainerRef = useRef<HTMLDivElement | null>(null)
@@ -427,34 +430,73 @@ export default function AdminDashboard() {
     }
   }
 
-  const sendQuickAction = async (text: string) => {
+  const sendPaymentDetails = async () => {
     const sessionToken = checkAuthBeforeRequest()
     if (!sessionToken || !selectedOrderId) return
 
-    setIsQuickActionSending(true)
+    setIsPaymentDetailsSending(true)
     try {
-      const response = await fetch(`/api/admin/orders/${selectedOrderId}/messages?token=${sessionToken}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-      })
-      if (!response.ok) {
-        throw new Error("Failed to send quick action")
+      const trimmedDetails = paymentDetails.trim()
+      const trimmedBank = paymentBank.trim()
+      const trimmedAmount = paymentAmount.trim()
+
+      if (!trimmedDetails || !trimmedBank || !trimmedAmount) {
+        toast({
+          title: "Заполните все поля",
+          description: "Укажите реквизиты, банк и сумму перед отправкой.",
+          variant: "destructive",
+        })
+        return
       }
+
+      const amountValue = Number(trimmedAmount.replace(/\s/g, "").replace(",", "."))
+      const formattedAmount = Number.isFinite(amountValue)
+        ? amountValue.toLocaleString("ru-RU")
+        : trimmedAmount
+
+      const messages = [
+        {
+          text: `**Реквизиты: ${trimmedDetails}**`,
+          telegramText: `<b>Реквизиты: ${trimmedDetails}</b>`,
+        },
+        {
+          text: `**🏦 БАНК: ${trimmedBank} 🏦**`,
+          telegramText: `<b>🏦 БАНК: ${trimmedBank} 🏦</b>`,
+        },
+        {
+          text: `**Сумма: ${formattedAmount} ₽. Платим одним платежом строго указанную сумму. На оплату 15 минут.**`,
+          telegramText: `<b>Сумма: ${formattedAmount} ₽. Платим одним платежом строго указанную сумму. На оплату 15 минут.</b>`,
+        },
+      ]
+
+      for (const message of messages) {
+        const response = await fetch(`/api/admin/orders/${selectedOrderId}/messages?token=${sessionToken}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: message.text, telegramText: message.telegramText, parseMode: "HTML" }),
+        })
+        if (!response.ok) {
+          throw new Error("Failed to send payment details")
+        }
+      }
+
+      setPaymentDetails("")
+      setPaymentBank("")
+      setPaymentAmount("")
       toast({
-        title: "Сообщение отправлено",
-        description: "Запрос отправлен клиенту в Telegram.",
+        title: "Сообщения отправлены",
+        description: "Реквизиты, банк и сумма отправлены в чат сделки.",
       })
     } catch (error) {
-      console.error("Quick action error:", error)
+      console.error("Payment details error:", error)
       toast({
         title: "Ошибка",
-        description: "Не удалось отправить запрос клиенту",
+        description: "Не удалось отправить реквизиты клиенту",
         variant: "destructive",
       })
     } finally {
       if (mountedRef.current) {
-        setIsQuickActionSending(false)
+        setIsPaymentDetailsSending(false)
       }
     }
   }
@@ -1038,6 +1080,14 @@ export default function AdminDashboard() {
     return `${dateLabel} • ${amountLabel} • ${contactLabel}`
   }
 
+  const renderOrderMessageText = (text: string) => {
+    const match = text.match(/^\*\*([\s\S]+)\*\*$/)
+    if (match) {
+      return <div className="mt-1 whitespace-pre-wrap font-bold">{match[1]}</div>
+    }
+    return <div className="mt-1 whitespace-pre-wrap">{text}</div>
+  }
+
   const selectedOrder = orders.find((order) => order.id === selectedOrderId)
 
   if (isLoading) {
@@ -1179,29 +1229,48 @@ export default function AdminDashboard() {
                         </div>
                       </div>
 
-                      <div className="grid gap-3 md:grid-cols-2">
-                        <Button
-                          variant="outline"
-                          disabled={isQuickActionSending}
-                          onClick={() =>
-                            sendQuickAction(
-                              "Пожалуйста, отправьте QR-код для оплаты или скриншот экрана с QR-кодом. После этого вернитесь в мини-приложение.",
-                            )
-                          }
-                        >
-                          Запросить QR-код
-                        </Button>
-                        <Button
-                          variant="outline"
-                          disabled={isQuickActionSending}
-                          onClick={() =>
-                            sendQuickAction(
-                              "Пожалуйста, отправьте фото/видео подтверждения или нужный файл. После отправки вернитесь в мини-приложение.",
-                            )
-                          }
-                        >
-                          Запросить медиа
-                        </Button>
+                      <div className="rounded-lg border bg-white p-4 text-sm">
+                        <div className="font-medium text-gray-900">Реквизиты для оплаты</div>
+                        <p className="mt-1 text-xs text-gray-500">
+                          Отправляет клиенту три жирных сообщения: реквизиты, банк и сумму с условиями оплаты.
+                        </p>
+                        <div className="mt-4 grid gap-3">
+                          <div className="grid gap-2">
+                            <Label htmlFor="payment-details">Реквизиты (телефон или карта)</Label>
+                            <Input
+                              id="payment-details"
+                              value={paymentDetails}
+                              onChange={(event) => setPaymentDetails(event.target.value)}
+                              placeholder="Например, +7 900 000-00-00 или 4276 0000 0000 0000"
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <Label htmlFor="payment-bank">Банк</Label>
+                            <Input
+                              id="payment-bank"
+                              value={paymentBank}
+                              onChange={(event) => setPaymentBank(event.target.value)}
+                              placeholder="Сбербанк, Озон, Другой"
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <Label htmlFor="payment-amount">Сумма (₽)</Label>
+                            <Input
+                              id="payment-amount"
+                              inputMode="decimal"
+                              value={paymentAmount}
+                              onChange={(event) => setPaymentAmount(event.target.value)}
+                              placeholder="Например, 12 500"
+                            />
+                          </div>
+                          <Button
+                            onClick={sendPaymentDetails}
+                            disabled={isPaymentDetailsSending}
+                            className="w-full"
+                          >
+                            {isPaymentDetailsSending ? "Отправляем..." : "Отправить в чат сделки"}
+                          </Button>
+                        </div>
                       </div>
 
                       <div className="rounded-lg border bg-white p-4 text-sm">
@@ -1233,7 +1302,7 @@ export default function AdminDashboard() {
                                 {message.senderRole === "admin" ? "Администратор" : "Клиент"} ·{" "}
                                 {new Date(message.createdAt).toLocaleString("ru-RU")}
                               </div>
-                              {message.text && <div className="mt-1 whitespace-pre-wrap">{message.text}</div>}
+                              {message.text && renderOrderMessageText(message.text)}
                               {message.fileUrl && (
                                 <div className="mt-2 space-y-2">
                                   {resolveMessageFileType(message.fileUrl) === "image" ? (
