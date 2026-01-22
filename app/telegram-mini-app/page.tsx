@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { getMarkupForAmount } from "@/lib/exchange-config"
-import { OrderFormModal } from "@/components/order-form-modal"
+import { MiniAppOrderFormModal } from "@/components/telegram-mini-app/order-form-modal"
 
 interface ExchangeRateData {
   rate: string
@@ -351,13 +351,12 @@ export default function TelegramMiniAppPage() {
         </Card>
       </main>
 
-      <OrderFormModal
+      <MiniAppOrderFormModal
         isOpen={isOrderModalOpen}
         onClose={() => setIsOrderModalOpen(false)}
         yuanAmount={yuanAmount}
         rubleAmount={rubleAmount}
         exchangeRate={exchangeRate}
-        submissionVariant="mini-app"
         telegramInitData={initData}
         onOrderCreated={handleOrderCreated}
       />
