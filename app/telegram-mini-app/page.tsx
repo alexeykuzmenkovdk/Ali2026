@@ -16,11 +16,25 @@ interface ExchangeRateData {
   timestamp: string
 }
 
+type OrderStatus = "CREATED" | "IN_PROGRESS" | "COMPLETED" | "CANCELED"
+
+interface ActiveOrder {
+  id: string
+  status: OrderStatus
+  totalRub: number
+  totalCny: number
+  rate: number
+  createdAt: string
+}
+
 export default function TelegramMiniAppPage() {
   const router = useRouter()
   const [isTelegram, setIsTelegram] = useState(false)
   const [initData, setInitData] = useState("")
   const [userLabel, setUserLabel] = useState("Гость")
+  const [activeOrder, setActiveOrder] = useState<ActiveOrder | null>(null)
+  const [isActiveOrderLoading, setIsActiveOrderLoading] = useState(false)
+  const [activeOrderError, setActiveOrderError] = useState<string | null>(null)
 
   const [amount, setAmount] = useState<string>("1000")
   const [result, setResult] = useState<number | null>(null)
@@ -93,6 +107,51 @@ export default function TelegramMiniAppPage() {
 
     fetchExchangeRate()
   }, [])
+
+  useEffect(() => {
+    if (!isTelegram || !initData) {
+      setActiveOrder(null)
+      setActiveOrderError(null)
+      return
+    }
+
+    let isMounted = true
+
+    const fetchActiveOrder = async () => {
+      try {
+        setIsActiveOrderLoading(true)
+        setActiveOrderError(null)
+        const response = await fetch("/api/orders/active", {
+          headers: {
+            "x-telegram-init-data": initData,
+          },
+        })
+
+        if (!isMounted) return
+
+        if (!response.ok) {
+          throw new Error("Не удалось загрузить активную заявку.")
+        }
+
+        const data = await response.json()
+        setActiveOrder(data.order ?? null)
+      } catch (error) {
+        if (isMounted) {
+          setActiveOrderError(error instanceof Error ? error.message : "Не удалось загрузить активную заявку.")
+        }
+      } finally {
+        if (isMounted) {
+          setIsActiveOrderLoading(false)
+        }
+      }
+    }
+
+    fetchActiveOrder()
+
+    return () => {
+      isMounted = false
+    }
+  }, [initData, isTelegram])
 
   const getRateForAmount = (amountNum: number) => {
     if (isManual && manualRate) {
@@ -169,6 +228,21 @@ export default function TelegramMiniAppPage() {
     }
   }
 
+  const statusLabel = (status: OrderStatus | undefined) => {
+    switch (status) {
+      case "CREATED":
+        return "Создана"
+      case "IN_PROGRESS":
+        return "В работе"
+      case "COMPLETED":
+        return "Завершена"
+      case "CANCELED":
+        return "Отменена"
+      default:
+        return "Неизвестно"
+    }
+  }
+
   const exchangeRates = useMemo(() => {
     return [
       { range: "До 500 CNY", rate: (baseRate + 0.96).toFixed(2) },
@@ -211,6 +285,51 @@ export default function TelegramMiniAppPage() {
             ))}
           </div>
         </div>
+
+        {(activeOrder || isActiveOrderLoading || activeOrderError) && (
+          <Card className="border-emerald-500/30 bg-emerald-500/10">
+            <CardHeader>
+              <CardTitle className="text-lg">Активная заявка</CardTitle>
+              <CardDescription className="text-emerald-100/80">
+                Если вы уже открывали сделку, вернитесь в комнату и продолжайте общение с админом.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm">
+              {isActiveOrderLoading && <div className="text-emerald-100/80">Проверяем активную заявку...</div>}
+              {!isActiveOrderLoading && activeOrderError && (
+                <div className="rounded-lg border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-amber-100">
+                  {activeOrderError}
+                </div>
+              )}
+              {!isActiveOrderLoading && activeOrder && (
+                <>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-lg border border-emerald-500/30 bg-slate-950/60 px-3 py-2">
+                      <div className="text-emerald-200/80">Статус</div>
+                      <div className="text-base font-semibold text-white">{statusLabel(activeOrder.status)}</div>
+                    </div>
+                    <div className="rounded-lg border border-emerald-500/30 bg-slate-950/60 px-3 py-2">
+                      <div className="text-emerald-200/80">Номер заявки</div>
+                      <div className="text-base font-semibold text-white">#{activeOrder.id.slice(0, 6)}</div>
+                    </div>
+                    <div className="rounded-lg border border-emerald-500/30 bg-slate-950/60 px-3 py-2">
+                      <div className="text-emerald-200/80">Сумма</div>
+                      <div className="text-base font-semibold text-white">
+                        {activeOrder.totalRub.toLocaleString("ru-RU")} ₽
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    className="w-full bg-emerald-500 text-slate-950 transition hover:bg-emerald-400"
+                    onClick={() => router.push(`/telegram-mini-app/deal/${activeOrder.id}`)}
+                  >
+                    Вернуться в комнату сделки
+                  </Button>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <Card className="border-slate-800 bg-slate-900/60">
           <CardHeader>
