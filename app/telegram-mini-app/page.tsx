@@ -310,31 +310,6 @@ export default function TelegramMiniAppPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-10">
-        <div className="space-y-4 rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-950 via-slate-950 to-emerald-500/10 p-6">
-          <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Mini App · P2P</p>
-          <div className="space-y-2">
-            <h1 className="text-3xl font-semibold">Сделка по обмену CNY в стиле P2P</h1>
-            <p className="text-slate-300">
-              Подайте заявку, получите подтверждение и перейдите в комнату сделки с чатом с админом.
-            </p>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-3">
-            {[
-              { label: "Заявка", value: "1-2 мин" },
-              { label: "Подтверждение", value: "Онлайн" },
-              { label: "Чат", value: "24/7" },
-            ].map((item) => (
-              <div
-                key={item.label}
-                className="rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3 text-sm"
-              >
-                <div className="text-slate-400">{item.label}</div>
-                <div className="text-lg font-semibold text-emerald-300">{item.value}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
         <Tabs defaultValue="active" className="w-full">
           <TabsList className="grid w-full grid-cols-2 bg-slate-900/70">
             <TabsTrigger value="active" className="text-sm">
@@ -445,73 +420,6 @@ export default function TelegramMiniAppPage() {
 
         <Card className="border-slate-800 bg-slate-900/60">
           <CardHeader>
-            <CardTitle className="text-lg">Этапы сделки</CardTitle>
-            <CardDescription className="text-slate-400">
-              Поток как в P2P: заявка → подтверждение → чат → обработка админом.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4 text-sm">
-            {[
-              {
-                title: "Подать заявку",
-                description: "Заполните сумму и подтвердите отправку заявки в Telegram.",
-              },
-              {
-                title: "Заявка принята",
-                description: "Сделка фиксируется, и вы сразу попадаете в комнату сделки.",
-              },
-              {
-                title: "Комната сделки",
-                description: "Чат с админом синхронизируется с админ-панелью.",
-              },
-              {
-                title: "Админ обрабатывает",
-                description: "Администратор ведёт заявку через панель и подтверждает шаги.",
-              },
-            ].map((step, index) => (
-              <div
-                key={step.title}
-                className="flex gap-4 rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3"
-              >
-                <div className="flex h-8 w-8 items-center justify-center rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-200">
-                  {index + 1}
-                </div>
-                <div>
-                  <div className="font-medium text-white">{step.title}</div>
-                  <div className="text-slate-400">{step.description}</div>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card className="border-slate-800 bg-slate-900/60">
-          <CardHeader>
-            <CardTitle className="text-lg">Статус подключения</CardTitle>
-            <CardDescription className="text-slate-400">
-              Проверяем, что мини-приложение открыто в Telegram WebApp.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
-              <span>Среда запуска</span>
-              <span className={isTelegram ? "text-emerald-400" : "text-amber-400"}>
-                {isTelegram ? "Telegram WebApp" : "Обычный браузер"}
-              </span>
-            </div>
-            <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
-              <span>Пользователь</span>
-              <span className="text-slate-200">{userLabel}</span>
-            </div>
-            <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
-              <span>InitData</span>
-              <span className="text-slate-200">{initData ? `${initData.length} символов` : "нет"}</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-slate-800 bg-slate-900/60">
-          <CardHeader>
             <CardTitle className="text-lg">Калькулятор P2P</CardTitle>
             <CardDescription className="text-slate-400">
               Укажите сумму в рублях, чтобы увидеть итоговую сумму в CNY по актуальному курсу.
@@ -520,14 +428,15 @@ export default function TelegramMiniAppPage() {
           <CardContent className="space-y-4">
             <div className="rounded-lg border border-slate-800 bg-slate-950 px-4 py-3 text-sm">
               <div className="flex items-center justify-between">
-              <span className="text-slate-300">Текущий курс</span>
+                <span className="text-slate-300">Текущий курс</span>
                 <span className="text-emerald-300">1 CNY = {exchangeRate.toFixed(2)} RUB</span>
               </div>
               {!isManual && (
                 <div className="mt-2 text-xs text-slate-400">Базовый курс ЦБ: {baseRate.toFixed(2)} RUB</div>
               )}
               <div className="mt-1 text-xs text-slate-500">
-                {isManual ? "Ручной курс" : "Автоматический курс"} • Обновлено: {lastUpdated ? formatDate(lastUpdated) : "Загрузка..."}
+                {isManual ? "Ручной курс" : "Автоматический курс"} • Обновлено:{" "}
+                {lastUpdated ? formatDate(lastUpdated) : "Загрузка..."}
               </div>
             </div>
 
@@ -580,6 +489,86 @@ export default function TelegramMiniAppPage() {
             )}
           </CardContent>
         </Card>
+
+        <div className="space-y-4 rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-950 via-slate-950 to-emerald-500/10 p-6">
+          <p className="text-xs uppercase tracking-[0.3em] text-slate-400">AlipayFast · Premium</p>
+          <div className="space-y-2">
+            <h1 className="text-3xl font-semibold">
+              Сервис по быстрому пополнению Alipay и WeChat для клиентов AlipayFast
+            </h1>
+            <p className="text-slate-300">
+              Быстрые заявки, прозрачный курс и сопровождение админом в одной комфортной комнате сделки.
+            </p>
+          </div>
+        </div>
+
+        <Card className="border-slate-800 bg-slate-900/60">
+          <CardHeader>
+            <CardTitle className="text-lg">Статус подключения</CardTitle>
+            <CardDescription className="text-slate-400">
+              Проверяем, что мини-приложение открыто в Telegram WebApp.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
+              <span>Среда запуска</span>
+              <span className={isTelegram ? "text-emerald-400" : "text-amber-400"}>
+                {isTelegram ? "Telegram WebApp" : "Обычный браузер"}
+              </span>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
+              <span>Пользователь</span>
+              <span className="text-slate-200">{userLabel}</span>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
+              <span>InitData</span>
+              <span className="text-slate-200">{initData ? `${initData.length} символов` : "нет"}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-slate-800 bg-slate-900/60">
+          <CardHeader>
+            <CardTitle className="text-lg">Этапы сделки</CardTitle>
+            <CardDescription className="text-slate-400">
+              Поток как в P2P: заявка → подтверждение → чат → обработка админом.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 text-sm">
+            {[
+              {
+                title: "Подать заявку",
+                description: "Заполните сумму и подтвердите отправку заявки в Telegram.",
+              },
+              {
+                title: "Заявка принята",
+                description: "Сделка фиксируется, и вы сразу попадаете в комнату сделки.",
+              },
+              {
+                title: "Комната сделки",
+                description: "Чат с админом синхронизируется с админ-панелью.",
+              },
+              {
+                title: "Админ обрабатывает",
+                description: "Администратор ведёт заявку через панель и подтверждает шаги.",
+              },
+            ].map((step, index) => (
+              <div
+                key={step.title}
+                className="flex gap-4 rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3"
+              >
+                <div className="flex h-8 w-8 items-center justify-center rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-200">
+                  {index + 1}
+                </div>
+                <div>
+                  <div className="font-medium text-white">{step.title}</div>
+                  <div className="text-slate-400">{step.description}</div>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
       </main>
 
       <MiniAppOrderFormModal
