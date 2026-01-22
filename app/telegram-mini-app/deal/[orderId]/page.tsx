@@ -21,6 +21,7 @@ interface OrderMessage {
   id: string
   senderRole: "client" | "admin"
   text?: string
+  fileUrl?: string
   createdAt: string
 }
 
@@ -34,8 +35,10 @@ export default function DealRoomPage() {
   const [order, setOrder] = useState<Order | null>(null)
   const [messages, setMessages] = useState<OrderMessage[]>([])
   const [messageText, setMessageText] = useState("")
+  const [messageFile, setMessageFile] = useState<File | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSending, setIsSending] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const bottomRef = useRef<HTMLDivElement | null>(null)
@@ -134,18 +137,44 @@ export default function DealRoomPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
+  const uploadMessageFile = async (file: File) => {
+    const formData = new FormData()
+    formData.append("file", file)
+    const response = await fetch("/api/uploads", {
+      method: "POST",
+      headers: {
+        "x-telegram-init-data": initData,
+      },
+      body: formData,
+    })
+
+    if (!response.ok) {
+      throw new Error("Не удалось загрузить файл.")
+    }
+
+    const data = await response.json()
+    return data.url as string
+  }
+
   const handleSend = async () => {
-    if (!messageText.trim() || !initData || !orderId) return
+    if (!initData || !orderId) return
+    const trimmedText = messageText.trim()
+    if (!trimmedText && !messageFile) return
     setIsSending(true)
 
     try {
+      let fileUrl: string | undefined
+      if (messageFile) {
+        setIsUploading(true)
+        fileUrl = await uploadMessageFile(messageFile)
+      }
       const response = await fetch(`/api/orders/${orderId}/messages`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-telegram-init-data": initData,
         },
-        body: JSON.stringify({ text: messageText.trim() }),
+        body: JSON.stringify({ text: trimmedText || undefined, fileUrl }),
       })
 
       if (!response.ok) {
@@ -153,12 +182,22 @@ export default function DealRoomPage() {
       }
 
       setMessageText("")
+      setMessageFile(null)
       await fetchMessages(orderId, initData)
     } catch (sendError) {
       setError(sendError instanceof Error ? sendError.message : "Не удалось отправить сообщение.")
     } finally {
       setIsSending(false)
+      setIsUploading(false)
     }
+  }
+
+  const resolveFileType = (fileUrl: string) => {
+    const lower = fileUrl.toLowerCase()
+    if (/\.(png|jpe?g|gif|webp|bmp|svg)$/.test(lower)) return "image"
+    if (/\.(mp4|webm|mov|ogg)$/.test(lower)) return "video"
+    if (/\.(pdf)$/.test(lower)) return "pdf"
+    return "file"
   }
 
   const statusLabel = (status: OrderStatus | undefined) => {
@@ -266,7 +305,25 @@ export default function DealRoomPage() {
                           : "bg-slate-800 text-slate-100"
                       }`}
                     >
-                      <div className="whitespace-pre-wrap">{message.text}</div>
+                      {message.text && <div className="whitespace-pre-wrap">{message.text}</div>}
+                      {message.fileUrl && (
+                        <div className="mt-2">
+                          {resolveFileType(message.fileUrl) === "image" ? (
+                            <img src={message.fileUrl} alt="Вложение" className="max-h-48 rounded-md border" />
+                          ) : resolveFileType(message.fileUrl) === "video" ? (
+                            <video src={message.fileUrl} controls className="max-h-48 w-full rounded-md border" />
+                          ) : (
+                            <a
+                              href={message.fileUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center text-emerald-200 underline"
+                            >
+                              Открыть файл
+                            </a>
+                          )}
+                        </div>
+                      )}
                       <div className="mt-1 text-[10px] text-slate-400">
                         {new Date(message.createdAt).toLocaleString("ru-RU", {
                           hour: "2-digit",
@@ -286,12 +343,25 @@ export default function DealRoomPage() {
                 onChange={(event) => setMessageText(event.target.value)}
                 placeholder="Напишите сообщение..."
                 className="border-slate-800 bg-slate-950 text-white"
-                disabled={isSending || !initData}
+                disabled={isSending || isUploading || !initData}
               />
-              <Button onClick={handleSend} disabled={isSending || !messageText.trim() || !initData}>
-                {isSending ? "Отправка..." : "Отправить"}
+              <Input
+                type="file"
+                accept="image/*,video/*,application/pdf"
+                onChange={(event) => setMessageFile(event.target.files?.[0] ?? null)}
+                className="border-slate-800 bg-slate-950 text-white file:text-white"
+                disabled={isSending || isUploading || !initData}
+              />
+              <Button
+                onClick={handleSend}
+                disabled={isSending || isUploading || (!messageText.trim() && !messageFile) || !initData}
+              >
+                {isSending || isUploading ? "Отправка..." : "Отправить"}
               </Button>
             </div>
+            {messageFile && (
+              <div className="text-xs text-slate-400">Прикреплено: {messageFile.name}</div>
+            )}
             <div className="text-xs text-slate-500">
               Если нужно выйти, вернитесь на главный экран мини-приложения.
               <button

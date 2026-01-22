@@ -81,9 +81,11 @@ export default function AdminDashboard() {
   const [selectedOrderId, setSelectedOrderId] = useState<string>("")
   const [orderMessages, setOrderMessages] = useState<AdminMessage[]>([])
   const [orderMessageText, setOrderMessageText] = useState<string>("")
+  const [orderMessageFile, setOrderMessageFile] = useState<File | null>(null)
   const [isOrdersLoading, setIsOrdersLoading] = useState<boolean>(false)
   const [isMessagesLoading, setIsMessagesLoading] = useState<boolean>(false)
   const [isMessageSending, setIsMessageSending] = useState<boolean>(false)
+  const [isMessageUploading, setIsMessageUploading] = useState<boolean>(false)
   const [isQuickActionSending, setIsQuickActionSending] = useState<boolean>(false)
 
   const [showcaseItems, setShowcaseItems] = useState<ShowcaseItem[]>([])
@@ -301,14 +303,44 @@ export default function AdminDashboard() {
     }
   }
 
+  const uploadOrderMessageFile = async (file: File) => {
+    const sessionToken = checkAuthBeforeRequest()
+    if (!sessionToken) {
+      throw new Error("No session")
+    }
+
+    const formData = new FormData()
+    formData.append("file", file)
+    const response = await fetch(`/api/admin/orders/uploads?token=${sessionToken}`, {
+      method: "POST",
+      body: formData,
+    })
+
+    const data = await response.json()
+    if (!response.ok) {
+      throw new Error(data.error ?? "Upload failed")
+    }
+
+    return data.url as string
+  }
+
+  const resolveMessageFileType = (fileUrl: string) => {
+    const lower = fileUrl.toLowerCase()
+    if (/\.(png|jpe?g|gif|webp|bmp|svg)$/.test(lower)) return "image"
+    if (/\.(mp4|webm|mov|ogg)$/.test(lower)) return "video"
+    if (/\.(pdf)$/.test(lower)) return "pdf"
+    return "file"
+  }
+
   const sendOrderMessage = async () => {
     const sessionToken = checkAuthBeforeRequest()
     if (!sessionToken || !selectedOrderId) return
 
-    if (!orderMessageText.trim()) {
+    const trimmedMessage = orderMessageText.trim()
+    if (!trimmedMessage && !orderMessageFile) {
       toast({
         title: "Пустое сообщение",
-        description: "Введите текст сообщения перед отправкой.",
+        description: "Введите текст или прикрепите файл перед отправкой.",
         variant: "destructive",
       })
       return
@@ -316,14 +348,20 @@ export default function AdminDashboard() {
 
     setIsMessageSending(true)
     try {
+      let fileUrl: string | undefined
+      if (orderMessageFile) {
+        setIsMessageUploading(true)
+        fileUrl = await uploadOrderMessageFile(orderMessageFile)
+      }
       const response = await fetch(`/api/admin/orders/${selectedOrderId}/messages?token=${sessionToken}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: orderMessageText }),
+        body: JSON.stringify({ text: trimmedMessage || undefined, fileUrl }),
       })
       const data = await response.json()
       if (response.ok && mountedRef.current) {
         setOrderMessageText("")
+        setOrderMessageFile(null)
         setOrderMessages((prev) => [...prev, data.message])
         toast({
           title: "Сообщение отправлено",
@@ -342,6 +380,7 @@ export default function AdminDashboard() {
     } finally {
       if (mountedRef.current) {
         setIsMessageSending(false)
+        setIsMessageUploading(false)
       }
     }
   }
@@ -1097,7 +1136,33 @@ export default function AdminDashboard() {
                                 {message.senderRole === "admin" ? "Администратор" : "Клиент"} ·{" "}
                                 {new Date(message.createdAt).toLocaleString("ru-RU")}
                               </div>
-                              <div className="mt-1 whitespace-pre-wrap">{message.text ?? "—"}</div>
+                              {message.text && <div className="mt-1 whitespace-pre-wrap">{message.text}</div>}
+                              {message.fileUrl && (
+                                <div className="mt-2">
+                                  {resolveMessageFileType(message.fileUrl) === "image" ? (
+                                    <img
+                                      src={message.fileUrl}
+                                      alt="Вложение"
+                                      className="max-h-48 rounded-md border"
+                                    />
+                                  ) : resolveMessageFileType(message.fileUrl) === "video" ? (
+                                    <video
+                                      src={message.fileUrl}
+                                      controls
+                                      className="max-h-48 w-full rounded-md border"
+                                    />
+                                  ) : (
+                                    <a
+                                      href={message.fileUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="text-sm text-orange-600 underline"
+                                    >
+                                      Открыть файл
+                                    </a>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           ))
                         )}
@@ -1112,13 +1177,27 @@ export default function AdminDashboard() {
                           placeholder="Введите текст уведомления или сообщение по заявке"
                           className="min-h-[120px]"
                         />
+                        <Input
+                          type="file"
+                          accept="image/*,video/*,application/pdf"
+                          onChange={(event) => setOrderMessageFile(event.target.files?.[0] ?? null)}
+                          disabled={isMessageSending || isMessageUploading || !selectedOrderId}
+                        />
+                        {orderMessageFile && (
+                          <div className="text-xs text-gray-500">Прикреплено: {orderMessageFile.name}</div>
+                        )}
                         <Button
                           onClick={sendOrderMessage}
-                          disabled={isMessageSending || !selectedOrderId}
+                          disabled={
+                            isMessageSending ||
+                            isMessageUploading ||
+                            (!orderMessageText.trim() && !orderMessageFile) ||
+                            !selectedOrderId
+                          }
                           className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700"
                         >
                           <MessageSquareText className="h-4 w-4 mr-2" />
-                          {isMessageSending ? "Отправка..." : "Отправить сообщение"}
+                          {isMessageSending || isMessageUploading ? "Отправка..." : "Отправить сообщение"}
                         </Button>
                       </div>
                     </div>

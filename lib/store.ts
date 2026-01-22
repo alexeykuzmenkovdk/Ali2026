@@ -502,7 +502,8 @@ export async function listOrders() {
   const result = await pool.query(
     `SELECT o.*,
       (SELECT COUNT(*) FROM order_messages m WHERE m.order_id = o.id) as message_count,
-      (SELECT text FROM order_messages m WHERE m.order_id = o.id ORDER BY created_at DESC LIMIT 1) as last_message
+      (SELECT CASE WHEN text IS NOT NULL THEN text ELSE '📎 Файл' END
+       FROM order_messages m WHERE m.order_id = o.id ORDER BY created_at DESC LIMIT 1) as last_message
      FROM orders o
      ORDER BY created_at DESC`,
   )

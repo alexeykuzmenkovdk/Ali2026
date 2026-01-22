@@ -20,17 +20,27 @@ export async function POST(request: Request, { params }: { params: { orderId: st
   }
 
   const body = await request.json()
+  if (!body.text && !body.fileUrl) {
+    return NextResponse.json({ error: "Empty message" }, { status: 400 })
+  }
   const order = await getOrderById(params.orderId)
   const message = await addMessage({
     orderId: params.orderId,
     senderRole: "admin",
     text: body.text,
+    fileUrl: body.fileUrl,
   })
 
   if (order) {
+    const noticeLines = [
+      `✉️ Оператор ответил по заявке #${params.orderId.slice(0, 6)}`,
+      body.text ?? "",
+      body.fileUrl ? `📎 Файл: ${body.fileUrl}` : "",
+      "Откройте мини-приложение для продолжения.",
+    ].filter(Boolean)
     sendMessage({
       chat_id: order.userId,
-      text: `✉️ Оператор ответил по заявке #${params.orderId.slice(0, 6)}\n${body.text ?? ""}\n\nОткройте мини-приложение для продолжения.`,
+      text: noticeLines.join("\n"),
     }).catch(() => null)
   }
 
