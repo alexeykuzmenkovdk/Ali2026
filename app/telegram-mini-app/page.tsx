@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getMarkupForAmount } from "@/lib/exchange-config"
+import { useTelegramSwipeDownGuard } from "@/lib/telegram-swipe-guard"
 import { MiniAppOrderFormModal } from "@/components/telegram-mini-app/order-form-modal"
 
 interface ExchangeRateData {
@@ -80,6 +81,8 @@ export default function TelegramMiniAppPage() {
     setIsTelegram(false)
     setUserLabel("Гость")
   }, [])
+
+  useTelegramSwipeDownGuard(isTelegram)
 
   useEffect(() => {
     const fetchExchangeRate = async () => {
@@ -308,7 +311,7 @@ export default function TelegramMiniAppPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
+    <div className="min-h-screen overscroll-none bg-slate-950 text-white">
       <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-10">
         <div className="space-y-4 rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-950 via-slate-950 to-emerald-500/10 p-6">
           <p className="text-xs uppercase tracking-[0.3em] text-slate-400">AlipayFast · Premium</p>
