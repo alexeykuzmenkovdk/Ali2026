@@ -150,6 +150,23 @@ export async function getActiveOrder(userId: number) {
   return result.rows[0] ? mapOrder(result.rows[0]) : undefined
 }
 
+export async function listArchivedOrders(userId: number) {
+  await ensureReady()
+  const pool = getPool()
+  const result = await pool.query(
+    `SELECT * FROM orders WHERE user_id = $1 AND status IN ('COMPLETED', 'CANCELED') ORDER BY created_at DESC`,
+    [userId],
+  )
+  return result.rows.map(mapOrder)
+}
+
+export async function getOrderByIdForUser(orderId: string, userId: number) {
+  await ensureReady()
+  const pool = getPool()
+  const result = await pool.query("SELECT * FROM orders WHERE id = $1 AND user_id = $2", [orderId, userId])
+  return result.rows[0] ? mapOrder(result.rows[0]) : undefined
+}
+
 export async function listOrderSteps(orderId: string) {
   await ensureReady()
   const pool = getPool()
