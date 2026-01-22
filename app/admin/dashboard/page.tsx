@@ -90,6 +90,9 @@ export default function AdminDashboard() {
   const [isQuickActionSending, setIsQuickActionSending] = useState<boolean>(false)
   const [isOrderClosing, setIsOrderClosing] = useState<boolean>(false)
   const [mediaPreview, setMediaPreview] = useState<{ url: string; type: "image" | "video" } | null>(null)
+  const [isOrderChatPinnedToBottom, setIsOrderChatPinnedToBottom] = useState<boolean>(true)
+  const orderChatContainerRef = useRef<HTMLDivElement | null>(null)
+  const orderChatBottomRef = useRef<HTMLDivElement | null>(null)
 
   const [showcaseItems, setShowcaseItems] = useState<ShowcaseItem[]>([])
   const [showcaseTitle, setShowcaseTitle] = useState<string>("")
@@ -341,6 +344,23 @@ export default function AdminDashboard() {
       setMediaPreview({ url: fileUrl, type })
     }
   }
+
+  const handleOrderChatScroll = () => {
+    const container = orderChatContainerRef.current
+    if (!container) return
+    const threshold = 80
+    const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight
+    setIsOrderChatPinnedToBottom(distanceFromBottom < threshold)
+  }
+
+  useEffect(() => {
+    if (!isOrderChatPinnedToBottom) return
+    orderChatBottomRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [orderMessages, isOrderChatPinnedToBottom])
+
+  useEffect(() => {
+    setIsOrderChatPinnedToBottom(true)
+  }, [selectedOrderId])
 
   const sendOrderMessage = async () => {
     const sessionToken = checkAuthBeforeRequest()
@@ -1178,7 +1198,11 @@ export default function AdminDashboard() {
                         <img src="/telegram-qr.png" alt="QR Telegram" className="mt-3 h-32 w-32 rounded-md border" />
                       </div>
 
-                      <div className="max-h-[320px] space-y-3 overflow-y-auto rounded-lg border bg-white p-4">
+                      <div
+                        ref={orderChatContainerRef}
+                        onScroll={handleOrderChatScroll}
+                        className="max-h-[320px] space-y-3 overflow-y-auto rounded-lg border bg-white p-4"
+                      >
                         {isMessagesLoading ? (
                           <div className="text-sm text-gray-500">Загрузка сообщений...</div>
                         ) : orderMessages.length === 0 ? (
@@ -1248,6 +1272,7 @@ export default function AdminDashboard() {
                             </div>
                           ))
                         )}
+                        <div ref={orderChatBottomRef} />
                       </div>
 
                       <div className="space-y-3">

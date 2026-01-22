@@ -692,19 +692,23 @@ export async function verifyPaymentStep(orderId: string, stepId: string) {
 export async function completeOrder(orderId: string) {
   await ensureReady()
   const pool = getPool()
-  const blocking = await pool.query(
-    "SELECT 1 FROM payment_steps WHERE order_id = $1 AND status IN ('WAITING_FOR_PAYMENT', 'PAID') LIMIT 1",
-    [orderId],
-  )
-  if (blocking.rowCount && blocking.rowCount > 0) {
-    return { error: "Active steps exist" as const }
-  }
   const now = new Date().toISOString()
-  const result = await pool.query(
-    "UPDATE orders SET status = 'COMPLETED', updated_at = $2 WHERE id = $1 RETURNING *",
-    [orderId, now],
-  )
-  return result.rows[0] ? mapOrder(result.rows[0]) : undefined
+  await pool.query("BEGIN")
+  try {
+    await pool.query(
+      "UPDATE payment_steps SET status = 'CANCELED', updated_at = $2 WHERE order_id = $1 AND status IN ('WAITING_FOR_PAYMENT', 'PAID')",
+      [orderId, now],
+    )
+    const result = await pool.query(
+      "UPDATE orders SET status = 'COMPLETED', updated_at = $2 WHERE id = $1 RETURNING *",
+      [orderId, now],
+    )
+    await pool.query("COMMIT")
+    return result.rows[0] ? mapOrder(result.rows[0]) : undefined
+  } catch (error) {
+    await pool.query("ROLLBACK")
+    throw error
+  }
 }
 
 export async function adminCancelOrder(orderId: string) {
