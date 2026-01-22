@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { createOrder, getActiveOrder, listOrderMessages, listOrderSteps } from "@/lib/store"
+import { createOrder, listActiveOrders, listOrderMessages, listOrderSteps } from "@/lib/store"
 import { requireTelegramInitData } from "@/lib/telegram"
 
 export async function POST(request: Request) {
@@ -9,9 +9,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const existing = await getActiveOrder(telegram.user.id)
-  if (existing) {
-    return NextResponse.json({ error: "Active order exists" }, { status: 409 })
+  const activeOrders = await listActiveOrders(telegram.user.id)
+  if (activeOrders.length >= 2) {
+    return NextResponse.json({ error: "У вас уже есть две активные заявки." }, { status: 409 })
   }
 
   const body = await request.json()

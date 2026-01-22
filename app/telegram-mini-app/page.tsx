@@ -34,7 +34,7 @@ export default function TelegramMiniAppPage() {
   const [isTelegram, setIsTelegram] = useState(false)
   const [initData, setInitData] = useState("")
   const [userLabel, setUserLabel] = useState("Гость")
-  const [activeOrder, setActiveOrder] = useState<ActiveOrder | null>(null)
+  const [activeOrders, setActiveOrders] = useState<ActiveOrder[]>([])
   const [isActiveOrderLoading, setIsActiveOrderLoading] = useState(false)
   const [activeOrderError, setActiveOrderError] = useState<string | null>(null)
   const [archivedOrders, setArchivedOrders] = useState<ActiveOrder[]>([])
@@ -117,7 +117,7 @@ export default function TelegramMiniAppPage() {
 
   useEffect(() => {
     if (!isTelegram || !initData) {
-      setActiveOrder(null)
+      setActiveOrders([])
       setActiveOrderError(null)
       return
     }
@@ -141,7 +141,7 @@ export default function TelegramMiniAppPage() {
         }
 
         const data = await response.json()
-        setActiveOrder(data.order ?? null)
+        setActiveOrders(Array.isArray(data.orders) ? data.orders : [])
       } catch (error) {
         if (isMounted) {
           setActiveOrderError(error instanceof Error ? error.message : "Не удалось загрузить активную заявку.")
@@ -328,7 +328,7 @@ export default function TelegramMiniAppPage() {
         <Tabs defaultValue="active" className="w-full">
           <TabsList className="grid w-full grid-cols-2 bg-slate-900/70">
             <TabsTrigger value="active" className="text-sm">
-              Активная сделка
+              Активные сделки
             </TabsTrigger>
             <TabsTrigger value="archive" className="text-sm">
               Архив сделок
@@ -337,46 +337,50 @@ export default function TelegramMiniAppPage() {
           <TabsContent value="active">
             <Card className="border-emerald-500/30 bg-emerald-500/10">
               <CardHeader>
-                <CardTitle className="text-lg">Активная заявка</CardTitle>
+                <CardTitle className="text-lg">Активные заявки</CardTitle>
                 <CardDescription className="text-emerald-100/80">
-                  Если вы уже открывали сделку, вернитесь в комнату и продолжайте общение с админом.
+                  Можно держать до двух активных сделок. Откройте нужную комнату для общения с админом.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4 text-sm">
-                {isActiveOrderLoading && <div className="text-emerald-100/80">Проверяем активную заявку...</div>}
+                {isActiveOrderLoading && <div className="text-emerald-100/80">Проверяем активные заявки...</div>}
                 {!isActiveOrderLoading && activeOrderError && (
                   <div className="rounded-lg border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-amber-100">
                     {activeOrderError}
                   </div>
                 )}
-                {!isActiveOrderLoading && !activeOrder && !activeOrderError && (
+                {!isActiveOrderLoading && activeOrders.length === 0 && !activeOrderError && (
                   <div className="text-emerald-100/80">Активных сделок нет.</div>
                 )}
-                {!isActiveOrderLoading && activeOrder && (
-                  <>
-                    <div className="grid gap-3 sm:grid-cols-3">
-                      <div className="rounded-lg border border-emerald-500/30 bg-slate-950/60 px-3 py-2">
-                        <div className="text-emerald-200/80">Статус</div>
-                        <div className="text-base font-semibold text-white">{statusLabel(activeOrder.status)}</div>
-                      </div>
-                      <div className="rounded-lg border border-emerald-500/30 bg-slate-950/60 px-3 py-2">
-                        <div className="text-emerald-200/80">Номер заявки</div>
-                        <div className="text-base font-semibold text-white">#{activeOrder.id.slice(0, 6)}</div>
-                      </div>
-                      <div className="rounded-lg border border-emerald-500/30 bg-slate-950/60 px-3 py-2">
-                        <div className="text-emerald-200/80">Сумма</div>
-                        <div className="text-base font-semibold text-white">
-                          {activeOrder.totalRub.toLocaleString("ru-RU")} ₽
+                {!isActiveOrderLoading && activeOrders.length > 0 && (
+                  <div className="space-y-3">
+                    {activeOrders.map((order) => (
+                      <div key={order.id} className="space-y-3 rounded-xl border border-emerald-500/30 bg-slate-950/60 p-3">
+                        <div className="grid gap-3 sm:grid-cols-3">
+                          <div className="rounded-lg border border-emerald-500/30 bg-slate-950/60 px-3 py-2">
+                            <div className="text-emerald-200/80">Статус</div>
+                            <div className="text-base font-semibold text-white">{statusLabel(order.status)}</div>
+                          </div>
+                          <div className="rounded-lg border border-emerald-500/30 bg-slate-950/60 px-3 py-2">
+                            <div className="text-emerald-200/80">Номер заявки</div>
+                            <div className="text-base font-semibold text-white">#{order.id.slice(0, 6)}</div>
+                          </div>
+                          <div className="rounded-lg border border-emerald-500/30 bg-slate-950/60 px-3 py-2">
+                            <div className="text-emerald-200/80">Сумма</div>
+                            <div className="text-base font-semibold text-white">
+                              {order.totalRub.toLocaleString("ru-RU")} ₽
+                            </div>
+                          </div>
                         </div>
+                        <Button
+                          className="w-full bg-emerald-500 text-slate-950 transition hover:bg-emerald-400"
+                          onClick={() => router.push(`/telegram-mini-app/deal/${order.id}`)}
+                        >
+                          Вернуться в комнату сделки
+                        </Button>
                       </div>
-                    </div>
-                    <Button
-                      className="w-full bg-emerald-500 text-slate-950 transition hover:bg-emerald-400"
-                      onClick={() => router.push(`/telegram-mini-app/deal/${activeOrder.id}`)}
-                    >
-                      Вернуться в комнату сделки
-                    </Button>
-                  </>
+                    ))}
+                  </div>
                 )}
               </CardContent>
             </Card>

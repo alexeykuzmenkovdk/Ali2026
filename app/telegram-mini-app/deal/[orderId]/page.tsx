@@ -214,6 +214,14 @@ export default function DealRoomPage() {
     return "file"
   }
 
+  const renderMessageText = (text: string) => {
+    const match = text.match(/^\*\*([\s\S]+)\*\*$/)
+    if (match) {
+      return <div className="whitespace-pre-wrap font-bold">{match[1]}</div>
+    }
+    return <div className="whitespace-pre-wrap">{text}</div>
+  }
+
   const openMediaPreview = (fileUrl: string) => {
     const type = resolveFileType(fileUrl)
     if (type === "image" || type === "video") {
@@ -330,7 +338,7 @@ export default function DealRoomPage() {
                           : "bg-slate-800 text-slate-100"
                       }`}
                     >
-                      {message.text && <div className="whitespace-pre-wrap">{message.text}</div>}
+                      {message.text && renderMessageText(message.text)}
                       {message.fileUrl && (
                         <div className="mt-2 space-y-2">
                           {resolveFileType(message.fileUrl) === "image" ? (

@@ -20,25 +20,28 @@ export async function POST(request: Request, { params }: { params: { orderId: st
   }
 
   const body = await request.json()
-  if (!body.text && !body.fileUrl) {
+  if (!body.text && !body.fileUrl && !body.telegramText) {
     return NextResponse.json({ error: "Empty message" }, { status: 400 })
   }
+  const textForStorage = body.text ?? body.telegramText
   const order = await getOrderById(params.orderId)
   const message = await addMessage({
     orderId: params.orderId,
     senderRole: "admin",
-    text: body.text,
+    text: textForStorage,
     fileUrl: body.fileUrl,
   })
 
   const origin = new URL(request.url).origin
   const fileLink = body.fileUrl ? new URL(body.fileUrl, origin).toString() : null
+  const telegramText = body.telegramText ?? body.text ?? ""
+  const parseMode = body.parseMode
 
   const adminId = process.env.ADMIN_USER_ID
   if (adminId) {
     const adminNoticeLines = [
       `✉️ Сообщение отправлено клиенту по заявке #${params.orderId.slice(0, 6)}`,
-      body.text ?? "",
+      textForStorage ?? "",
       fileLink ? `📎 Файл: ${fileLink}` : "",
     ].filter(Boolean)
     sendMessage({
@@ -50,13 +53,14 @@ export async function POST(request: Request, { params }: { params: { orderId: st
   if (order) {
     const noticeLines = [
       `✉️ Оператор ответил по заявке #${params.orderId.slice(0, 6)}`,
-      body.text ?? "",
+      telegramText,
       fileLink ? `📎 Файл: ${fileLink}` : "",
       "Вернуться в комнату сделки: t.me/Manivlbot/alipayfast",
     ].filter(Boolean)
     sendMessage({
       chat_id: order.userId,
       text: noticeLines.join("\n"),
+      parse_mode: parseMode,
     }).catch(() => null)
   }
 
