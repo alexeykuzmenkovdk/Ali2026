@@ -334,6 +334,22 @@ export async function createOrder(data: {
   const now = new Date().toISOString()
   const orderId = randomUUID()
   const stepId = randomUUID()
+  const welcomeMessageId = randomUUID()
+  const contactLabel = data.contactUsername?.trim() || "не указан"
+  const phoneLabel = data.contactPhone?.trim() || "не указан"
+  const welcomeMessage = [
+    "👋 Добро пожаловать! Мы получили вашу заявку и уже начали обработку.",
+    "",
+    "📌 Данные заявки:",
+    `• Сумма обмена: ${data.totalCny.toFixed(2)} CNY (${data.totalRub.toFixed(2)} RUB)`,
+    `• Ник клиента: ${contactLabel}`,
+    `• Телефон: ${phoneLabel}`,
+    "",
+    "💳 Обмены принимаются только через Т-Банк.",
+    "Ожидайте — совсем скоро вам ответит админ alipayfast (@whaledator) и отправит актуальные банковские реквизиты.",
+    "",
+    "⚠️ ВНИМАНИЕ: при оплате внимательно выбирайте банк. Если перевод будет отправлен на банк, отличный от указанного в реквизитах, сделка не сможет быть завершена, а средства в 99% случаев возврату не подлежат.",
+  ].join("\n")
   await pool.query("BEGIN")
   try {
     await pool.query(
@@ -360,6 +376,11 @@ export async function createOrder(data: {
         (id, order_id, step_index, status, amount_rub, method, requisite_value, bank_name, receipt_email, created_at, updated_at)
        VALUES ($1, $2, 1, 'WAITING_FOR_PAYMENT', $3, 'SBP', $4, $5, $6, $7, $8)`,
       [stepId, orderId, Math.round(data.totalRub / 2), "+7 999 888-77-66", "Т-Банк", "pay@alipayfast.ru", now, now],
+    )
+    await pool.query(
+      `INSERT INTO order_messages (id, order_id, sender_role, text, file_url, created_at)
+       VALUES ($1, $2, 'admin', $3, NULL, $4)`,
+      [welcomeMessageId, orderId, welcomeMessage, now],
     )
 
     await pool.query("COMMIT")
