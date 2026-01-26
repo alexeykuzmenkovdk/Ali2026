@@ -484,37 +484,45 @@ function PremiumCard({ exchangeRate }: PremiumCardProps) {
         </div>
 
         {/* QR-код в центре - с новым изображением */}
-        <motion.div
-          className="relative mx-auto flex items-center justify-center my-2"
-          onMouseEnter={() => setQrHovered(true)}
-          onMouseLeave={() => setQrHovered(false)}
-          whileHover={{ scale: 1.05 }}
-          animate={{
-            y: isHovered ? -5 : 0,
-            boxShadow: qrHovered ? "0 10px 25px rgba(0,0,0,0.2)" : "0 5px 15px rgba(0,0,0,0.1)",
-          }}
-          transition={{ type: "spring", stiffness: 300, damping: 15 }}
+        <Link
+          href="https://t.me/alipayfast"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Перейти в Telegram группу @ALIPAYFAST"
+          className="inline-flex"
         >
-          <div className="relative w-48 overflow-hidden rounded-lg bg-white p-1 shadow-lg">
-            <CriticalImage
-              src="/telegram-qr.png"
-              alt="Telegram QR код @ALIPAYFAST"
-              width={200}
-              height={220}
-              className="h-auto w-full"
-              sizes="(max-width: 640px) 180px, 200px"
-              quality={95}
-              priority
-            />
-            {/* Блик на QR-коде */}
-            <motion.div
-              className="absolute inset-0 rounded-lg bg-white/30"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: qrHovered ? 0.2 : 0 }}
-              transition={{ duration: 0.3 }}
-            />
-          </div>
-        </motion.div>
+          <motion.div
+            className="relative mx-auto flex items-center justify-center my-2 cursor-pointer"
+            onMouseEnter={() => setQrHovered(true)}
+            onMouseLeave={() => setQrHovered(false)}
+            whileHover={{ scale: 1.05 }}
+            animate={{
+              y: isHovered ? -5 : 0,
+              boxShadow: qrHovered ? "0 10px 25px rgba(0,0,0,0.2)" : "0 5px 15px rgba(0,0,0,0.1)",
+            }}
+            transition={{ type: "spring", stiffness: 300, damping: 15 }}
+          >
+            <div className="relative w-48 overflow-hidden rounded-lg bg-white p-1 shadow-lg">
+              <CriticalImage
+                src="/telegram-qr.png"
+                alt="Telegram QR код @ALIPAYFAST"
+                width={200}
+                height={220}
+                className="h-auto w-full"
+                sizes="(max-width: 640px) 180px, 200px"
+                quality={95}
+                priority
+              />
+              {/* Блик на QR-коде */}
+              <motion.div
+                className="absolute inset-0 rounded-lg bg-white/30"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: qrHovered ? 0.2 : 0 }}
+                transition={{ duration: 0.3 }}
+              />
+            </div>
+          </motion.div>
+        </Link>
 
         {/* Символы валют - увеличены на 15% */}
         <div className="relative flex items-center justify-between px-4 mt-1">
