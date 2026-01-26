@@ -87,9 +87,11 @@ export default function AdminDashboard() {
   const [isMessagesLoading, setIsMessagesLoading] = useState<boolean>(false)
   const [isMessageSending, setIsMessageSending] = useState<boolean>(false)
   const [isMessageUploading, setIsMessageUploading] = useState<boolean>(false)
+  const [isFirstExchangeSending, setIsFirstExchangeSending] = useState<boolean>(false)
   const [isPaymentDetailsSending, setIsPaymentDetailsSending] = useState<boolean>(false)
   const [sendingPaymentField, setSendingPaymentField] = useState<"details" | "bank" | "amount" | "email" | null>(null)
   const [isOrderClosing, setIsOrderClosing] = useState<boolean>(false)
+  const [isArchiveOpen, setIsArchiveOpen] = useState<boolean>(false)
   const [paymentDetails, setPaymentDetails] = useState<string>("")
   const [paymentBank, setPaymentBank] = useState<string>("")
   const [paymentAmount, setPaymentAmount] = useState<string>("")
@@ -429,6 +431,47 @@ export default function AdminDashboard() {
       if (mountedRef.current) {
         setIsMessageSending(false)
         setIsMessageUploading(false)
+      }
+    }
+  }
+
+  const sendFirstExchangeMessage = async () => {
+    const sessionToken = checkAuthBeforeRequest()
+    if (!sessionToken || !selectedOrderId) return
+
+    const firstExchangeText =
+      "Добрый день!\n" +
+      "Давайте уточним основные моменты:\n" +
+      "— у вас уже настроен кошелёк Alipay;\n" +
+      "— у вас есть возможность произвести оплату из Т-Банка. Мы работаем исключительно с оплатой из данного банка при условии, что у вас установлено официальное мобильное приложение (веб-версия не подойдёт), так как необходимо отправить чек от имени банка."
+
+    setIsFirstExchangeSending(true)
+    try {
+      const response = await fetch(`/api/admin/orders/${selectedOrderId}/messages?token=${sessionToken}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: firstExchangeText }),
+      })
+      const data = await response.json()
+      if (response.ok && mountedRef.current) {
+        setOrderMessages((prev) => [...prev, data.message])
+        toast({
+          title: "Сообщение отправлено",
+          description: "Клиент получил приветствие в Telegram.",
+        })
+      }
+    } catch (error) {
+      console.error("Send first exchange error:", error)
+      if (mountedRef.current) {
+        toast({
+          title: "Ошибка",
+          description: "Не удалось отправить сообщение клиенту",
+          variant: "destructive",
+        })
+      }
+    } finally {
+      if (mountedRef.current) {
+        setIsFirstExchangeSending(false)
       }
     }
   }
@@ -1190,6 +1233,13 @@ export default function AdminDashboard() {
     return <div className="mt-1 whitespace-pre-wrap">{text}</div>
   }
 
+  const formatOrderAmount = (order?: AdminOrder) => {
+    if (!order) return "—"
+    const rub = order.totalRub.toLocaleString("ru-RU")
+    const cny = order.totalCny.toLocaleString("ru-RU")
+    return `${rub} ₽ · ${cny} CNY`
+  }
+
   const selectedOrder = orders.find((order) => order.id === selectedOrderId)
   const activeOrders = orders.filter((order) => order.status !== "COMPLETED" && order.status !== "CANCELED")
   const archivedOrders = orders.filter((order) => order.status === "COMPLETED" || order.status === "CANCELED")
@@ -1209,17 +1259,27 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="sticky top-0 z-40 w-full border-b bg-white shadow-sm">
-        <div className="container flex h-16 items-center justify-between py-4">
+        <div className="container flex flex-col gap-4 py-4 sm:h-16 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
             <Logo size="small" />
             <span className="text-lg font-bold text-gray-800">Админ-панель</span>
           </div>
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={() => router.push("/")} className="text-gray-600">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push("/")}
+              className="w-full text-gray-600 sm:w-auto"
+            >
               <Home className="h-4 w-4 mr-2" />
               На главную
             </Button>
-            <Button variant="ghost" size="sm" onClick={handleLogout} className="text-gray-600">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLogout}
+              className="w-full text-gray-600 sm:w-auto"
+            >
               <LogOut className="h-4 w-4 mr-2" />
               Выйти
             </Button>
@@ -1227,9 +1287,9 @@ export default function AdminDashboard() {
         </div>
       </header>
 
-      <main className="container py-8">
+      <main className="container py-6 sm:py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
+          <TabsList className="grid w-full grid-cols-1 gap-2 mb-6 sm:grid-cols-3 sm:gap-0 sm:mb-8">
             <TabsTrigger value="orders" className="text-base py-3">
               <ClipboardList className="h-4 w-4 mr-2" />
               Заявки
@@ -1245,8 +1305,8 @@ export default function AdminDashboard() {
           </TabsList>
 
           <TabsContent value="orders">
-            <div className="grid gap-8 lg:grid-cols-[360px_1fr]">
-              <div className="space-y-6">
+            <div className="grid gap-6 lg:grid-cols-[360px_1fr] lg:gap-8">
+              <div className="space-y-5 sm:space-y-6">
                 <Card className="border-2 shadow-md">
                   <CardHeader>
                     <CardTitle>Входящие заявки</CardTitle>
@@ -1302,49 +1362,66 @@ export default function AdminDashboard() {
                 </Card>
 
                 <Card className="border-2 shadow-md">
-                  <CardHeader>
-                    <CardTitle>Архив заявок</CardTitle>
-                    <CardDescription>Завершённые и отменённые сделки</CardDescription>
+                  <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <CardTitle>Архив заявок</CardTitle>
+                      <CardDescription>Завершённые и отменённые сделки</CardDescription>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsArchiveOpen((prev) => !prev)}
+                      className="w-full sm:w-auto"
+                    >
+                      {isArchiveOpen ? "Скрыть архив" : "Открыть архив"}
+                    </Button>
                   </CardHeader>
                   <CardContent>
-                    {isOrdersLoading && archivedOrders.length > 0 && (
-                      <div className="mb-3 flex items-center gap-2 text-xs text-gray-400">
-                        <RefreshCw className="h-3 w-3 animate-spin" />
-                        Обновляем архив...
-                      </div>
-                    )}
-                    {isOrdersLoading && archivedOrders.length === 0 ? (
-                      <div className="text-sm text-gray-500">Загрузка архива...</div>
-                    ) : archivedOrders.length === 0 ? (
-                      <div className="text-sm text-gray-500">Архив пока пуст.</div>
+                    {!isArchiveOpen ? (
+                      <div className="text-sm text-gray-500">Архив скрыт. Нажмите «Открыть архив».</div>
                     ) : (
-                      <div className="space-y-3">
-                        {archivedOrders.map((order) => (
-                          <button
-                            key={order.id}
-                            type="button"
-                            onClick={() => setSelectedOrderId(order.id)}
-                            className={`w-full rounded-lg border px-4 py-3 text-left transition ${
-                              selectedOrderId === order.id
-                                ? "border-orange-500 bg-orange-50"
-                                : "border-gray-200 bg-white"
-                            }`}
-                          >
-                            <div className="text-sm font-semibold text-gray-900">{formatOrderLabel(order)}</div>
-                            <div className="mt-2 text-xs text-gray-600">
-                              Статус: <span className="font-medium">{order.status}</span>
-                            </div>
-                            <div className="mt-1 text-xs text-gray-600">
-                              Сумма: <span className="font-medium">{order.totalRub} ₽</span>
-                            </div>
-                            {order.lastMessage && (
-                              <div className="mt-2 text-xs text-gray-500 line-clamp-2">
-                                Последнее: {order.lastMessage}
-                              </div>
-                            )}
-                          </button>
-                        ))}
-                      </div>
+                      <>
+                        {isOrdersLoading && archivedOrders.length > 0 && (
+                          <div className="mb-3 flex items-center gap-2 text-xs text-gray-400">
+                            <RefreshCw className="h-3 w-3 animate-spin" />
+                            Обновляем архив...
+                          </div>
+                        )}
+                        {isOrdersLoading && archivedOrders.length === 0 ? (
+                          <div className="text-sm text-gray-500">Загрузка архива...</div>
+                        ) : archivedOrders.length === 0 ? (
+                          <div className="text-sm text-gray-500">Архив пока пуст.</div>
+                        ) : (
+                          <div className="space-y-3">
+                            {archivedOrders.map((order) => (
+                              <button
+                                key={order.id}
+                                type="button"
+                                onClick={() => setSelectedOrderId(order.id)}
+                                className={`w-full rounded-lg border px-4 py-3 text-left transition ${
+                                  selectedOrderId === order.id
+                                    ? "border-orange-500 bg-orange-50"
+                                    : "border-gray-200 bg-white"
+                                }`}
+                              >
+                                <div className="text-sm font-semibold text-gray-900">{formatOrderLabel(order)}</div>
+                                <div className="mt-2 text-xs text-gray-600">
+                                  Статус: <span className="font-medium">{order.status}</span>
+                                </div>
+                                <div className="mt-1 text-xs text-gray-600">
+                                  Сумма: <span className="font-medium">{order.totalRub} ₽</span>
+                                </div>
+                                {order.lastMessage && (
+                                  <div className="mt-2 text-xs text-gray-500 line-clamp-2">
+                                    Последнее: {order.lastMessage}
+                                  </div>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </>
                     )}
                   </CardContent>
                 </Card>
@@ -1373,10 +1450,20 @@ export default function AdminDashboard() {
                             })()}
                           </span>
                         </div>
-                        <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-gray-600">
+                        <div className="mt-1 text-gray-600">Сумма: <span className="font-medium">{formatOrderAmount(selectedOrder)}</span></div>
+                        <div className="mt-3 flex flex-col gap-2 text-xs text-gray-600 sm:flex-row sm:flex-wrap sm:items-center">
                           <span>
                             Статус: <span className="font-medium">{selectedOrder?.status ?? "—"}</span>
                           </span>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={sendFirstExchangeMessage}
+                            disabled={!selectedOrder || isFirstExchangeSending}
+                            className="w-full sm:w-auto"
+                          >
+                            {isFirstExchangeSending ? "Отправка..." : "Первый обмен"}
+                          </Button>
                           <Button
                             size="sm"
                             variant="outline"
@@ -1387,6 +1474,7 @@ export default function AdminDashboard() {
                               selectedOrder.status === "COMPLETED" ||
                               selectedOrder.status === "CANCELED"
                             }
+                            className="w-full sm:w-auto"
                           >
                             {isOrderClosing ? "Закрытие..." : "Закрыть и в архив"}
                           </Button>
@@ -1414,7 +1502,7 @@ export default function AdminDashboard() {
                                 variant="outline"
                                 onClick={() => sendPaymentDetailItem("details")}
                                 disabled={isPaymentDetailsSending || sendingPaymentField === "details"}
-                                className="sm:w-40"
+                                className="w-full sm:w-40"
                               >
                                 {sendingPaymentField === "details" ? "Отправка..." : "Отправить"}
                               </Button>
@@ -1434,7 +1522,7 @@ export default function AdminDashboard() {
                                 variant="outline"
                                 onClick={() => sendPaymentDetailItem("bank")}
                                 disabled={isPaymentDetailsSending || sendingPaymentField === "bank"}
-                                className="sm:w-40"
+                                className="w-full sm:w-40"
                               >
                                 {sendingPaymentField === "bank" ? "Отправка..." : "Отправить"}
                               </Button>
@@ -1455,7 +1543,7 @@ export default function AdminDashboard() {
                                 variant="outline"
                                 onClick={() => sendPaymentDetailItem("amount")}
                                 disabled={isPaymentDetailsSending || sendingPaymentField === "amount"}
-                                className="sm:w-40"
+                                className="w-full sm:w-40"
                               >
                                 {sendingPaymentField === "amount" ? "Отправка..." : "Отправить"}
                               </Button>
@@ -1476,7 +1564,7 @@ export default function AdminDashboard() {
                                 variant="outline"
                                 onClick={() => sendPaymentDetailItem("email")}
                                 disabled={isPaymentDetailsSending || sendingPaymentField === "email"}
-                                className="sm:w-40"
+                                className="w-full sm:w-40"
                               >
                                 {sendingPaymentField === "email" ? "Отправка..." : "Отправить"}
                               </Button>
@@ -1490,12 +1578,6 @@ export default function AdminDashboard() {
                             {isPaymentDetailsSending ? "Отправляем..." : "Отправить в чат сделки"}
                           </Button>
                         </div>
-                      </div>
-
-                      <div className="rounded-lg border bg-white p-4 text-sm">
-                        <div className="font-medium text-gray-900">QR-код Telegram</div>
-                        <p className="mt-1 text-xs text-gray-500">Можно отправить клиенту для быстрого перехода.</p>
-                        <img src="/telegram-qr.png" alt="QR Telegram" className="mt-3 h-32 w-32 rounded-md border" />
                       </div>
 
                       <div
