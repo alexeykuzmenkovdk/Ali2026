@@ -1076,52 +1076,43 @@ export default function DealRoomPage() {
             <video src={mediaPreview.url} controls className="max-h-[70vh] w-full rounded-md" />
           ) : null}
           {mediaPreview?.type === "image" && imageUrls.length > 1 && mediaIndex !== null && (
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="border-orange-400 text-orange-100"
-                  onClick={() => openImageByIndex((mediaIndex - 1 + imageUrls.length) % imageUrls.length)}
-                >
-                  ← Предыдущая
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="border-orange-400 text-orange-100"
-                  onClick={() => openImageByIndex((mediaIndex + 1) % imageUrls.length)}
-                >
-                  Следующая →
-                </Button>
+            <div className="mt-4 flex flex-col gap-3 text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="border-orange-500 bg-orange-500 font-bold text-black transition hover:bg-orange-400"
+                    onClick={() => openImageByIndex((mediaIndex - 1 + imageUrls.length) % imageUrls.length)}
+                  >
+                    ← Предыдущая
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="border-orange-500 bg-orange-500 font-bold text-black transition hover:bg-orange-400"
+                    onClick={() => openImageByIndex((mediaIndex + 1) % imageUrls.length)}
+                  >
+                    Следующая →
+                  </Button>
+                </div>
+                <span className="text-xs text-slate-400">
+                  {mediaIndex + 1} / {imageUrls.length}
+                </span>
               </div>
-              <span className="text-xs text-slate-400">
-                {mediaIndex + 1} / {imageUrls.length}
-              </span>
-            </div>
-          )}
-          {mediaPreview && (
-            <div className="mt-4 flex flex-wrap gap-4 text-sm">
-              <a href={mediaPreview.url} target="_blank" rel="noreferrer" className="text-orange-200 underline">
-                Открыть в новой вкладке
-              </a>
-              <a href={mediaPreview.url} download className="text-orange-200 underline">
-                Скачать
-              </a>
-              {mediaPreview.type === "image" && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveView("chat")
-                    setMediaPreview(null)
-                    setMediaIndex(null)
-                    scrollToBottom()
-                  }}
-                  className="text-orange-200 underline"
-                >
-                  Вернуться к чату
-                </button>
-              )}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-fit border-orange-500 bg-orange-500 font-bold text-black transition hover:bg-orange-400"
+                onClick={() => {
+                  setActiveView("chat")
+                  setMediaPreview(null)
+                  setMediaIndex(null)
+                  scrollToBottom()
+                }}
+              >
+                Вернуться к чату
+              </Button>
             </div>
           )}
         </DialogContent>
