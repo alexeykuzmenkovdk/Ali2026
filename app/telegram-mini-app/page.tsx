@@ -343,11 +343,17 @@ export default function TelegramMiniAppPage() {
         </div>
 
         <Tabs defaultValue="active" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-slate-900/70">
-            <TabsTrigger value="active" className="text-sm">
+          <TabsList className="grid w-full grid-cols-2 border border-orange-500/30 bg-slate-900/70">
+            <TabsTrigger
+              value="active"
+              className="text-sm text-orange-100/80 data-[state=active]:bg-orange-500 data-[state=active]:text-white"
+            >
               Активные сделки
             </TabsTrigger>
-            <TabsTrigger value="archive" className="text-sm">
+            <TabsTrigger
+              value="archive"
+              className="text-sm text-orange-100/80 data-[state=active]:bg-orange-500 data-[state=active]:text-white"
+            >
               Архив сделок
             </TabsTrigger>
           </TabsList>
@@ -459,7 +465,7 @@ export default function TelegramMiniAppPage() {
 
         <Card className="border-slate-800 bg-slate-900/60 shadow-lg shadow-orange-500/10">
           <CardHeader>
-            <CardTitle className="text-lg">Калькулятор P2P</CardTitle>
+            <CardTitle className="text-lg text-orange-300">Создать заявку</CardTitle>
             <CardDescription className="text-slate-400">
               Укажите сумму в рублях, чтобы увидеть итоговую сумму в CNY по актуальному курсу.
             </CardDescription>
@@ -529,28 +535,22 @@ export default function TelegramMiniAppPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-slate-800 bg-slate-900/60 shadow-lg shadow-orange-500/10">
+        <Card className="border-orange-500/30 bg-gradient-to-br from-orange-500/10 via-slate-950 to-slate-950 shadow-lg shadow-orange-500/20">
           <CardHeader>
-            <CardTitle className="text-lg">Статус подключения</CardTitle>
-            <CardDescription className="text-slate-400">
-              Проверяем, что мини-приложение открыто в Telegram WebApp.
+            <CardTitle className="text-lg text-orange-200">Подпишитесь на наш Telegram</CardTitle>
+            <CardDescription className="text-orange-100/80">
+              Приоритетное обслуживание заявок для подписчиков канала, сигналы изменения курса, полезные новости.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
-              <span>Среда запуска</span>
-              <span className={isTelegram ? "text-orange-400" : "text-amber-400"}>
-                {isTelegram ? "Telegram WebApp" : "Обычный браузер"}
-              </span>
-            </div>
-            <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
-              <span>Пользователь</span>
-              <span className="text-slate-200">{userLabel}</span>
-            </div>
-            <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
-              <span>InitData</span>
-              <span className="text-slate-200">{initData ? `${initData.length} символов` : "нет"}</span>
-            </div>
+          <CardContent>
+            <Button
+              asChild
+              className="h-12 w-full bg-orange-500 text-white transition hover:bg-orange-400"
+            >
+              <a href="https://t.me/AlipayFast" target="_blank" rel="noreferrer">
+                Подписаться на телеграмм канал Alipayfast
+              </a>
+            </Button>
           </CardContent>
         </Card>
 
