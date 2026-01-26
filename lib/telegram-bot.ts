@@ -9,6 +9,7 @@ interface SendPhotoPayload {
   chat_id: number
   photo: string
   caption?: string
+  parse_mode?: "HTML" | "Markdown" | "MarkdownV2"
   reply_markup?: unknown
 }
 
