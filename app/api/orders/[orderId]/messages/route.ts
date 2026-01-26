@@ -3,6 +3,8 @@ import { addMessage, listOrderMessages } from "@/lib/store"
 import { requireTelegramInitData } from "@/lib/telegram"
 import { sendMessage } from "@/lib/telegram-bot"
 
+const DEAL_ROOM_LINK = "https://t.me/AlipayFastBot/alipayfast"
+
 export async function GET(request: Request, { params }: { params: { orderId: string } }) {
   const initData = request.headers.get("x-telegram-init-data")
   const telegram = requireTelegramInitData(initData)
@@ -32,7 +34,7 @@ export async function POST(request: Request, { params }: { params: { orderId: st
   if (adminId) {
     sendMessage({
       chat_id: Number(adminId),
-      text: `✉️ Новое сообщение по заявке #${params.orderId.slice(0, 6)}\n${body.text ?? ""}\n\nВернуться в комнату сделки: https://t.me/AlipayFastBot/alipayfast`,
+      text: `✉️ Новое сообщение по заявке #${params.orderId.slice(0, 6)}\n${body.text ?? ""}\n\nВернуться в комнату сделки: ${DEAL_ROOM_LINK}`,
     }).catch(() => null)
   }
 
