@@ -91,7 +91,7 @@ export default function TelegramMiniAppPage() {
     setUserLabel("Гость")
   }, [])
 
-  useTelegramSwipeDownGuard(isTelegram)
+  const pullOffset = useTelegramSwipeDownGuard(isTelegram)
 
   useEffect(() => {
     const fetchExchangeRate = async () => {
@@ -321,7 +321,10 @@ export default function TelegramMiniAppPage() {
 
   return (
     <div className="min-h-screen overscroll-none bg-slate-950 text-white">
-      <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 pb-10 pt-[calc(3.5rem+env(safe-area-inset-top))]">
+      <main
+        className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 pb-10 pt-[calc(5.5rem+env(safe-area-inset-top))] transition-transform duration-200"
+        style={{ transform: `translateY(${pullOffset}px)`, willChange: "transform" }}
+      >
         <div className="space-y-4 rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-950 via-slate-950 to-emerald-500/10 p-6">
           <p className="text-xs uppercase tracking-[0.3em] text-slate-400">AlipayFast · Premium</p>
           <div className="space-y-2">

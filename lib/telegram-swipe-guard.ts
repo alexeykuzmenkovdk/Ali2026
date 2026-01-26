@@ -1,13 +1,19 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 
 const DEFAULT_ALLOWED_ZONE_PX = 32
+const LONG_PRESS_MS = 350
+const MAX_PULL_PX = 120
 
 export function useTelegramSwipeDownGuard(isEnabled: boolean, allowedZonePx = DEFAULT_ALLOWED_ZONE_PX) {
   const touchStartYRef = useRef(0)
   const allowCloseGestureRef = useRef(false)
   const scrollContainerRef = useRef<HTMLElement | null>(null)
+  const longPressTimeoutRef = useRef<number | null>(null)
+  const longPressActiveRef = useRef(false)
+  const pullOffsetRef = useRef(0)
+  const [pullOffset, setPullOffset] = useState(0)
 
   useEffect(() => {
     if (!isEnabled) return
@@ -36,16 +42,35 @@ export function useTelegramSwipeDownGuard(isEnabled: boolean, allowedZonePx = DE
       scrollContainerRef.current = resolveScrollContainer(event.target)
       touchStartYRef.current = touch.clientY
       allowCloseGestureRef.current = touch.clientY <= allowedZonePx
+      longPressActiveRef.current = false
+      if (longPressTimeoutRef.current) {
+        window.clearTimeout(longPressTimeoutRef.current)
+      }
+      longPressTimeoutRef.current = window.setTimeout(() => {
+        longPressActiveRef.current = true
+      }, LONG_PRESS_MS)
     }
 
     const handleTouchMove = (event: TouchEvent) => {
-      if (allowCloseGestureRef.current) return
       const touch = event.touches[0]
       if (!touch) return
+      const delta = touch.clientY - touchStartYRef.current
+
+      if (longPressActiveRef.current && delta > 0) {
+        const nextOffset = Math.min(delta, MAX_PULL_PX)
+        if (nextOffset !== pullOffsetRef.current) {
+          pullOffsetRef.current = nextOffset
+          setPullOffset(nextOffset)
+        }
+        event.preventDefault()
+        return
+      }
+
+      if (allowCloseGestureRef.current) return
 
       const scrollElement = scrollContainerRef.current || document.scrollingElement || document.documentElement
       const isAtTop = scrollElement ? scrollElement.scrollTop <= 0 : true
-      const isPullingDown = touch.clientY - touchStartYRef.current > 0
+      const isPullingDown = delta > 0
 
       if (isAtTop && isPullingDown) {
         event.preventDefault()
@@ -54,6 +79,15 @@ export function useTelegramSwipeDownGuard(isEnabled: boolean, allowedZonePx = DE
 
     const resetGesture = () => {
       allowCloseGestureRef.current = false
+      longPressActiveRef.current = false
+      if (longPressTimeoutRef.current) {
+        window.clearTimeout(longPressTimeoutRef.current)
+        longPressTimeoutRef.current = null
+      }
+      if (pullOffsetRef.current !== 0) {
+        pullOffsetRef.current = 0
+        setPullOffset(0)
+      }
     }
 
     document.addEventListener("touchstart", handleTouchStart, { passive: true })
@@ -68,6 +102,12 @@ export function useTelegramSwipeDownGuard(isEnabled: boolean, allowedZonePx = DE
       document.removeEventListener("touchcancel", resetGesture)
       document.body.style.overscrollBehaviorY = previousBodyOverscroll
       document.documentElement.style.overscrollBehaviorY = previousHtmlOverscroll
+      if (longPressTimeoutRef.current) {
+        window.clearTimeout(longPressTimeoutRef.current)
+        longPressTimeoutRef.current = null
+      }
     }
   }, [allowedZonePx, isEnabled])
+
+  return pullOffset
 }
