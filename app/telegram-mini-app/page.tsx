@@ -325,15 +325,20 @@ export default function TelegramMiniAppPage() {
         className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 pb-10 pt-[calc(5.5rem+env(safe-area-inset-top))] transition-transform duration-200"
         style={{ transform: `translateY(${pullOffset}px)`, willChange: "transform" }}
       >
-        <div className="space-y-4 rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-950 via-slate-950 to-emerald-500/10 p-6">
-          <p className="text-xs uppercase tracking-[0.3em] text-slate-400">AlipayFast · Premium</p>
-          <div className="space-y-2">
-            <h1 className="text-3xl font-semibold">
-              Сервис по быстрому пополнению Alipay и WeChat для клиентов AlipayFast
-            </h1>
-            <p className="text-slate-300">
-              Быстрые заявки, прозрачный курс и сопровождение админом в одной комфортной комнате сделки.
-            </p>
+        <div className="space-y-4 rounded-2xl border border-orange-500/20 bg-gradient-to-br from-slate-950 via-slate-950 to-orange-500/15 p-6 shadow-lg shadow-orange-500/10">
+          <p className="text-xs uppercase tracking-[0.3em] text-orange-200/70">AlipayFast · Premium</p>
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-orange-500/30 bg-slate-950/80 p-2">
+              <img src="/alipayfast-logo.png" alt="AlipayFast" className="h-12 w-12 object-contain" />
+            </div>
+            <div className="min-w-[200px] flex-1 space-y-2">
+              <h1 className="text-3xl font-semibold">
+                Сервис по быстрому пополнению Alipay и WeChat для клиентов AlipayFast
+              </h1>
+              <p className="text-slate-300">
+                Быстрые заявки, прозрачный курс и сопровождение админом в одной комфортной комнате сделки.
+              </p>
+            </div>
           </div>
         </div>
 
@@ -347,45 +352,48 @@ export default function TelegramMiniAppPage() {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="active">
-            <Card className="border-emerald-500/30 bg-emerald-500/10">
+            <Card className="border-orange-500/30 bg-orange-500/10 shadow-lg shadow-orange-500/10">
               <CardHeader>
                 <CardTitle className="text-lg">Активные заявки</CardTitle>
-                <CardDescription className="text-emerald-100/80">
+                <CardDescription className="text-orange-100/80">
                   Можно держать до двух активных сделок. Откройте нужную комнату для общения с админом.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4 text-sm">
-                {isActiveOrderLoading && <div className="text-emerald-100/80">Проверяем активные заявки...</div>}
+                {isActiveOrderLoading && <div className="text-orange-100/80">Проверяем активные заявки...</div>}
                 {!isActiveOrderLoading && activeOrderError && (
                   <div className="rounded-lg border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-amber-100">
                     {activeOrderError}
                   </div>
                 )}
                 {!isActiveOrderLoading && activeOrders.length === 0 && !activeOrderError && (
-                  <div className="text-emerald-100/80">Активных сделок нет.</div>
+                  <div className="text-orange-100/80">Активных сделок нет.</div>
                 )}
                 {!isActiveOrderLoading && activeOrders.length > 0 && (
                   <div className="space-y-3">
                     {activeOrders.map((order) => (
-                      <div key={order.id} className="space-y-3 rounded-xl border border-emerald-500/30 bg-slate-950/60 p-3">
+                      <div
+                        key={order.id}
+                        className="space-y-3 rounded-xl border border-orange-500/30 bg-slate-950/60 p-3"
+                      >
                         <div className="grid gap-3 sm:grid-cols-3">
-                          <div className="rounded-lg border border-emerald-500/30 bg-slate-950/60 px-3 py-2">
-                            <div className="text-emerald-200/80">Статус</div>
+                          <div className="rounded-lg border border-orange-500/30 bg-slate-950/60 px-3 py-2">
+                            <div className="text-orange-200/80">Статус</div>
                             <div className="text-base font-semibold text-white">{statusLabel(order.status)}</div>
                           </div>
-                          <div className="rounded-lg border border-emerald-500/30 bg-slate-950/60 px-3 py-2">
-                            <div className="text-emerald-200/80">Номер заявки</div>
+                          <div className="rounded-lg border border-orange-500/30 bg-slate-950/60 px-3 py-2">
+                            <div className="text-orange-200/80">Номер заявки</div>
                             <div className="text-base font-semibold text-white">#{order.id.slice(0, 6)}</div>
                           </div>
-                          <div className="rounded-lg border border-emerald-500/30 bg-slate-950/60 px-3 py-2">
-                            <div className="text-emerald-200/80">Сумма</div>
+                          <div className="rounded-lg border border-orange-500/30 bg-slate-950/60 px-3 py-2">
+                            <div className="text-orange-200/80">Сумма</div>
                             <div className="text-base font-semibold text-white">
                               {order.totalRub.toLocaleString("ru-RU")} ₽
                             </div>
                           </div>
                         </div>
                         <Button
-                          className="w-full bg-emerald-500 text-slate-950 transition hover:bg-emerald-400"
+                          className="w-full bg-orange-500 text-white transition hover:bg-orange-400"
                           onClick={() => router.push(`/telegram-mini-app/deal/${order.id}`)}
                         >
                           Вернуться в комнату сделки
@@ -398,7 +406,7 @@ export default function TelegramMiniAppPage() {
             </Card>
           </TabsContent>
           <TabsContent value="archive">
-            <Card className="border-slate-800 bg-slate-900/60">
+            <Card className="border-slate-800 bg-slate-900/60 shadow-lg shadow-orange-500/10">
               <CardHeader>
                 <CardTitle className="text-lg">Архив сделок</CardTitle>
                 <CardDescription className="text-slate-400">
@@ -449,7 +457,7 @@ export default function TelegramMiniAppPage() {
           </TabsContent>
         </Tabs>
 
-        <Card className="border-slate-800 bg-slate-900/60">
+        <Card className="border-slate-800 bg-slate-900/60 shadow-lg shadow-orange-500/10">
           <CardHeader>
             <CardTitle className="text-lg">Калькулятор P2P</CardTitle>
             <CardDescription className="text-slate-400">
@@ -460,7 +468,7 @@ export default function TelegramMiniAppPage() {
             <div className="rounded-lg border border-slate-800 bg-slate-950 px-4 py-3 text-sm">
               <div className="flex items-center justify-between">
                 <span className="text-slate-300">Текущий курс</span>
-                <span className="text-emerald-300">1 CNY = {exchangeRate.toFixed(2)} RUB</span>
+                <span className="text-orange-300">1 CNY = {exchangeRate.toFixed(2)} RUB</span>
               </div>
               {!isManual && (
                 <div className="mt-2 text-xs text-slate-400">Базовый курс ЦБ: {baseRate.toFixed(2)} RUB</div>
@@ -500,13 +508,13 @@ export default function TelegramMiniAppPage() {
             </div>
 
             {result !== null && (
-              <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+              <div className="rounded-lg border border-orange-500/30 bg-orange-500/10 px-4 py-3 text-sm text-orange-100">
                 Вы получите: <span className="font-semibold">{result.toFixed(2)} CNY</span>
               </div>
             )}
 
             <Button
-              className="h-12 w-full bg-emerald-500 text-slate-950 transition hover:bg-emerald-400"
+              className="h-12 w-full bg-orange-500 text-white transition hover:bg-orange-400"
               onClick={() => setIsOrderModalOpen(true)}
               disabled={result === null || !amount || !isTelegram}
             >
@@ -521,7 +529,7 @@ export default function TelegramMiniAppPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-slate-800 bg-slate-900/60">
+        <Card className="border-slate-800 bg-slate-900/60 shadow-lg shadow-orange-500/10">
           <CardHeader>
             <CardTitle className="text-lg">Статус подключения</CardTitle>
             <CardDescription className="text-slate-400">
@@ -531,7 +539,7 @@ export default function TelegramMiniAppPage() {
           <CardContent className="space-y-3 text-sm">
             <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
               <span>Среда запуска</span>
-              <span className={isTelegram ? "text-emerald-400" : "text-amber-400"}>
+              <span className={isTelegram ? "text-orange-400" : "text-amber-400"}>
                 {isTelegram ? "Telegram WebApp" : "Обычный браузер"}
               </span>
             </div>
@@ -546,7 +554,7 @@ export default function TelegramMiniAppPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-slate-800 bg-slate-900/60">
+        <Card className="border-slate-800 bg-slate-900/60 shadow-lg shadow-orange-500/10">
           <CardHeader>
             <CardTitle className="text-lg">Этапы сделки</CardTitle>
             <CardDescription className="text-slate-400">
@@ -576,7 +584,7 @@ export default function TelegramMiniAppPage() {
                 key={step.title}
                 className="flex gap-4 rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3"
               >
-                <div className="flex h-8 w-8 items-center justify-center rounded-full border border-emerald-500/40 bg-emerald-500/10 text-emerald-200">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full border border-orange-500/40 bg-orange-500/10 text-orange-200">
                   {index + 1}
                 </div>
                 <div>

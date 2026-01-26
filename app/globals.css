@@ -307,6 +307,15 @@
   background: #ff5500;
 }
 
+.chat-scrollbar-hidden {
+  scrollbar-width: none;
+}
+
+.chat-scrollbar-hidden::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
 /* Стили для мобильных устройств */
 @media (max-width: 768px) {
   .container {
