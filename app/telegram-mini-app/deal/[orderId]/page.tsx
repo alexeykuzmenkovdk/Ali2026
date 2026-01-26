@@ -61,11 +61,6 @@ interface LocalMessage extends OrderMessage {
   file?: File
 }
 
-interface ToastState {
-  message: string
-  tone?: "success" | "error"
-}
-
 export default function DealRoomPage() {
   const router = useRouter()
   const params = useParams()
@@ -86,7 +81,6 @@ export default function DealRoomPage() {
   const [isFetchingMore, setIsFetchingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [toast, setToast] = useState<ToastState | null>(null)
   const [mediaPreview, setMediaPreview] = useState<{ url: string; type: "image" | "video" } | null>(null)
   const [isChatPinnedToBottom, setIsChatPinnedToBottom] = useState(true)
   const [chatScrollRatio, setChatScrollRatio] = useState(0)
@@ -102,7 +96,6 @@ export default function DealRoomPage() {
   const readDebounceRef = useRef<number | null>(null)
   const draftDebounceRef = useRef<number | null>(null)
   const initialScrollDoneRef = useRef(false)
-  const toastTimerRef = useRef<number | null>(null)
   const localMessagesRef = useRef<LocalMessage[]>([])
 
   const handleBack = useCallback(() => router.push("/telegram-mini-app"), [router])
@@ -163,19 +156,8 @@ export default function DealRoomPage() {
 
   useEffect(() => {
     return () => {
-      if (toastTimerRef.current) {
-        window.clearTimeout(toastTimerRef.current)
-      }
       localMessagesRef.current.forEach(revokeLocalMessageUrl)
     }
-  }, [])
-
-  const showToast = useCallback((message: string, tone: ToastState["tone"] = "success") => {
-    setToast({ message, tone })
-    if (toastTimerRef.current) {
-      window.clearTimeout(toastTimerRef.current)
-    }
-    toastTimerRef.current = window.setTimeout(() => setToast(null), 2500)
   }, [])
 
   const cloudStorageGet = useCallback(
@@ -696,56 +678,6 @@ export default function DealRoomPage() {
     return message.senderRole
   }
 
-  const formatCopyLine = (label: string, value?: string | number | null) => {
-    if (!value) return null
-    return `${label}: ${value}`
-  }
-
-  const copyText = async (text: string, successMessage = "Скопировано") => {
-    try {
-      await navigator.clipboard.writeText(text)
-    } catch (clipboardError) {
-      const fallback = document.createElement("textarea")
-      fallback.value = text
-      fallback.setAttribute("readonly", "")
-      fallback.style.position = "absolute"
-      fallback.style.left = "-9999px"
-      document.body.appendChild(fallback)
-      fallback.select()
-      document.execCommand("copy")
-      document.body.removeChild(fallback)
-      console.warn("Clipboard fallback", clipboardError)
-    }
-
-    showToast(successMessage, "success")
-    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred("light")
-  }
-
-  const handleCopyAll = () => {
-    if (!order) return
-
-    const activeStep = steps[0]
-    const lines = [
-      formatCopyLine("Заявка", `#${order.id.slice(0, 6)}`),
-      formatCopyLine("Сумма", `${order.totalRub.toLocaleString("ru-RU")} ₽ / ${order.totalCny.toFixed(2)} CNY`),
-      formatCopyLine("Курс", `${order.rate.toFixed(2)} RUB`),
-      formatCopyLine("Ник", order.contactUsername ? `@${order.contactUsername}` : null),
-      formatCopyLine("Телефон", order.contactPhone),
-      formatCopyLine("Alipay ID", order.alipayId),
-      formatCopyLine("Банк", activeStep?.bankName),
-      formatCopyLine("Реквизиты", activeStep?.requisiteValue),
-    ]
-      .filter(Boolean)
-      .join("\n")
-
-    void copyText(lines, "Реквизиты скопированы")
-  }
-
-  const handleCopyValue = (label: string, value?: string | number | null) => {
-    if (!value) return
-    void copyText(`${label}: ${value}`)
-  }
-
   const handleOrderAction = (label: string) => {
     const systemText = `Системное событие: ${label}`
     void handleSend({ textOverride: systemText, isSystem: true })
@@ -1046,10 +978,6 @@ export default function DealRoomPage() {
                       <span className="text-slate-200">{order?.contactUsername ? `@${order.contactUsername}` : "—"}</span>
                     </div>
                     <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
-                      <span>Телефон</span>
-                      <span className="text-slate-200">{order?.contactPhone ?? "—"}</span>
-                    </div>
-                    <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
                       <span>Alipay ID</span>
                       <span className="text-slate-200">{order?.alipayId ?? "—"}</span>
                     </div>
@@ -1058,45 +986,9 @@ export default function DealRoomPage() {
                   {steps[0] ? (
                     <div className="space-y-2">
                       <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
-                        <span>Банк</span>
-                        <div className="flex items-center gap-2 text-slate-200">
-                          <span>{steps[0].bankName}</span>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="border-orange-400/40 text-orange-200"
-                            onClick={() => handleCopyValue("Банк", steps[0].bankName)}
-                          >
-                            Копировать
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
                         <span>Реквизиты</span>
                         <div className="flex items-center gap-2 text-slate-200">
                           <span className="break-all">{steps[0].requisiteValue}</span>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="border-orange-400/40 text-orange-200"
-                            onClick={() => handleCopyValue("Реквизиты", steps[0].requisiteValue)}
-                          >
-                            Копировать
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
-                        <span>Email для чека</span>
-                        <div className="flex items-center gap-2 text-slate-200">
-                          <span>{steps[0].receiptEmail}</span>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="border-orange-400/40 text-orange-200"
-                            onClick={() => handleCopyValue("Email для чека", steps[0].receiptEmail)}
-                          >
-                            Копировать
-                          </Button>
                         </div>
                       </div>
                     </div>
@@ -1107,14 +999,6 @@ export default function DealRoomPage() {
                   )}
 
                   <div className="flex flex-wrap gap-2">
-                    <Button
-                      variant="outline"
-                      className="border-orange-400/40 text-orange-200"
-                      onClick={handleCopyAll}
-                      disabled={!steps[0]}
-                    >
-                      Скопировать все
-                    </Button>
                     <Button
                       variant="outline"
                       className="border-slate-700 text-slate-100"
@@ -1150,12 +1034,6 @@ export default function DealRoomPage() {
           )}
         </section>
       </main>
-
-      {toast && (
-        <div className="pointer-events-none fixed bottom-[calc(2.5rem+env(safe-area-inset-bottom))] left-1/2 z-50 -translate-x-1/2 rounded-full bg-slate-900/90 px-4 py-2 text-xs text-slate-100 shadow-lg">
-          {toast.message}
-        </div>
-      )}
 
       <Dialog open={!!mediaPreview} onOpenChange={(open) => !open && setMediaPreview(null)}>
         <DialogContent className="max-w-3xl bg-slate-950 text-white">
