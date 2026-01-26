@@ -537,7 +537,11 @@ iPhone (iOS):
 
     const qrRequestText =
       "Пожалуйста, пришлите в чат ваш QR-код Alipay для пополнения согласно инструкции. Сумму пополнения, пожалуйста, не указывайте."
-    const qrRequestImages = ["/alipay-qr-guide.jpg"]
+    const qrRequestImages = [
+      "/api/alipay-qr-request/step-1.jpg",
+      "/api/alipay-qr-request/step-2.jpg",
+      "/api/alipay-qr-request/step-3.jpg",
+    ]
 
     setIsQrRequestSending(true)
     try {
