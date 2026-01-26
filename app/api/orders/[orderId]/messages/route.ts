@@ -46,7 +46,7 @@ export async function POST(request: Request, { params }: { params: { orderId: st
     `✉️ Новое сообщение в комнате сделки #${params.orderId.slice(0, 6)}`,
     body.text ?? "",
     fileLink ? `📎 Файл: ${fileLink}` : "",
-    "Вернуться в комнату сделки: t.me/Manivlbot/alipayfast",
+    "Вернуться в комнату сделки: https://t.me/AlipayFastBot/alipayfast",
   ].filter(Boolean)
 
   sendMessage({
@@ -60,6 +60,7 @@ export async function POST(request: Request, { params }: { params: { orderId: st
       `✉️ Новое сообщение по заявке #${params.orderId.slice(0, 6)}`,
       body.text ?? "",
       fileLink ? `📎 Файл: ${fileLink}` : "",
+      "Вернуться в комнату сделки: https://t.me/AlipayFastBot/alipayfast",
     ].filter(Boolean)
     sendMessage({
       chat_id: adminChatId,

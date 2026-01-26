@@ -45,6 +45,7 @@ export async function POST(request: Request, { params }: { params: { orderId: st
       `✉️ Сообщение отправлено клиенту по заявке #${params.orderId.slice(0, 6)}`,
       textForStorage ?? "",
       fileLink ? `📎 Файл: ${fileLink}` : "",
+      "Вернуться в комнату сделки: https://t.me/AlipayFastBot/alipayfast",
     ].filter(Boolean)
     sendMessage({
       chat_id: adminChatId,
@@ -57,7 +58,7 @@ export async function POST(request: Request, { params }: { params: { orderId: st
       const captionLines = [
         `✉️ Оператор ответил по заявке #${params.orderId.slice(0, 6)}`,
         telegramText,
-        "Вернуться в комнату сделки: t.me/Manivlbot/alipayfast",
+        "Вернуться в комнату сделки: https://t.me/AlipayFastBot/alipayfast",
       ].filter(Boolean)
       sendPhoto({
         chat_id: order.userId,
@@ -70,7 +71,7 @@ export async function POST(request: Request, { params }: { params: { orderId: st
         `✉️ Оператор ответил по заявке #${params.orderId.slice(0, 6)}`,
         telegramText,
         fileLink ? `📎 Файл: ${fileLink}` : "",
-        "Вернуться в комнату сделки: t.me/Manivlbot/alipayfast",
+        "Вернуться в комнату сделки: https://t.me/AlipayFastBot/alipayfast",
       ].filter(Boolean)
       sendMessage({
         chat_id: order.userId,
