@@ -187,14 +187,29 @@ export async function listOrderSteps(orderId: string) {
   return result.rows.map(mapStep)
 }
 
-export async function listOrderMessages(orderId: string) {
+export async function listOrderMessages(
+  orderId: string,
+  options?: { limit?: number; beforeMessageId?: string | null },
+) {
   await ensureReady()
   const pool = getPool()
-  const result = await pool.query(
-    "SELECT * FROM order_messages WHERE order_id = $1 ORDER BY created_at ASC",
-    [orderId],
-  )
-  return result.rows.map(mapMessage)
+  const params: Array<string | number> = [orderId]
+  let query = "SELECT * FROM order_messages WHERE order_id = $1"
+
+  if (options?.beforeMessageId) {
+    params.push(options.beforeMessageId)
+    query += ` AND created_at < (SELECT created_at FROM order_messages WHERE id = $${params.length} AND order_id = $1)`
+  }
+
+  query += " ORDER BY created_at DESC"
+
+  if (options?.limit) {
+    params.push(options.limit)
+    query += ` LIMIT $${params.length}`
+  }
+
+  const result = await pool.query(query, params)
+  return result.rows.reverse().map(mapMessage)
 }
 
 export async function listBlogPosts(options?: { category?: string; publishedOnly?: boolean }) {

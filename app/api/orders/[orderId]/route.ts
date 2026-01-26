@@ -15,6 +15,6 @@ export async function GET(request: Request, { params }: { params: { orderId: str
   }
 
   const steps = await listOrderSteps(order.id)
-  const messages = await listOrderMessages(order.id)
+  const messages = await listOrderMessages(order.id, { limit: 50 })
   return NextResponse.json({ order, steps, messages })
 }
