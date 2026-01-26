@@ -88,6 +88,7 @@ export default function AdminDashboard() {
   const [isMessageSending, setIsMessageSending] = useState<boolean>(false)
   const [isMessageUploading, setIsMessageUploading] = useState<boolean>(false)
   const [isFirstExchangeSending, setIsFirstExchangeSending] = useState<boolean>(false)
+  const [isCheckInstructionSending, setIsCheckInstructionSending] = useState<boolean>(false)
   const [isPaymentDetailsSending, setIsPaymentDetailsSending] = useState<boolean>(false)
   const [sendingPaymentField, setSendingPaymentField] = useState<"details" | "bank" | "amount" | "email" | null>(null)
   const [isOrderClosing, setIsOrderClosing] = useState<boolean>(false)
@@ -472,6 +473,59 @@ export default function AdminDashboard() {
     } finally {
       if (mountedRef.current) {
         setIsFirstExchangeSending(false)
+      }
+    }
+  }
+
+  const sendCheckInstructionMessage = async () => {
+    const sessionToken = checkAuthBeforeRequest()
+    if (!sessionToken || !selectedOrderId) return
+
+    const checkInstructionText = `Пожалуйста, отправьте чек от имени Т-Банка, строго по инструкции ниже:
+
+Android:
+
+В квитанции нажмите на значок «Поделиться».
+Выберите именно значок приложения Т-Банк.
+❗️Не выбирайте приложения почты или мессенджеры — чек должен быть отправлен от имени банка.
+
+iPhone (iOS):
+
+В квитанции нажмите на значок «Поделиться».
+Выберите «Отправить по почте».
+Выберите пункт "другой e-mail" и введите предоставленный Вам email.
+Это важно для корректного подтверждения платежа.`
+
+    setIsCheckInstructionSending(true)
+    try {
+      const response = await fetch(`/api/admin/orders/${selectedOrderId}/messages?token=${sessionToken}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: checkInstructionText,
+          fileUrl: "/images/d0-a8-d0-b0-d0-b3-204.jpg",
+        }),
+      })
+      const data = await response.json()
+      if (response.ok && mountedRef.current) {
+        setOrderMessages((prev) => [...prev, data.message])
+        toast({
+          title: "Сообщение отправлено",
+          description: "Инструкция по чеку отправлена клиенту.",
+        })
+      }
+    } catch (error) {
+      console.error("Send check instruction error:", error)
+      if (mountedRef.current) {
+        toast({
+          title: "Ошибка",
+          description: "Не удалось отправить инструкцию по чеку",
+          variant: "destructive",
+        })
+      }
+    } finally {
+      if (mountedRef.current) {
+        setIsCheckInstructionSending(false)
       }
     }
   }
@@ -1463,6 +1517,15 @@ export default function AdminDashboard() {
                             className="w-full sm:w-auto"
                           >
                             {isFirstExchangeSending ? "Отправка..." : "Первый обмен"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={sendCheckInstructionMessage}
+                            disabled={!selectedOrder || isCheckInstructionSending}
+                            className="w-full sm:w-auto"
+                          >
+                            {isCheckInstructionSending ? "Отправка..." : "Инструкция ЧЕК"}
                           </Button>
                           <Button
                             size="sm"
