@@ -30,7 +30,7 @@ export async function POST(request: Request, { params }: { params: { orderId: st
   if (order) {
     sendMessage({
       chat_id: order.userId,
-      text: `✉️ Оператор ответил по заявке #${params.orderId.slice(0, 6)}\n${body.text ?? ""}\n\nОткройте мини-приложение для продолжения: https://t.me/AlipayFastBot/alipayfast`,
+      text: `✉️ Оператор ответил по заявке #${params.orderId.slice(0, 6)}\n${body.text ?? ""}\n\nВернуться в комнату сделки: https://t.me/AlipayFastBot/alipayfast`,
     }).catch(() => null)
   }
 

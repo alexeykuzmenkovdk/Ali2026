@@ -32,7 +32,7 @@ export async function POST(request: Request, { params }: { params: { orderId: st
   if (adminId) {
     sendMessage({
       chat_id: Number(adminId),
-      text: `✉️ Новое сообщение по заявке #${params.orderId.slice(0, 6)}\n${body.text ?? ""}`,
+      text: `✉️ Новое сообщение по заявке #${params.orderId.slice(0, 6)}\n${body.text ?? ""}\n\nВернуться в комнату сделки: https://t.me/AlipayFastBot/alipayfast`,
     }).catch(() => null)
   }
 
