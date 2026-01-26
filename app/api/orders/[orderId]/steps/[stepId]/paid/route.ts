@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { markStepPaid } from "@/lib/store"
 import { requireTelegramInitData } from "@/lib/telegram"
-import { sendMessage } from "@/lib/telegram-bot"
+import { getAdminChatId, sendMessage } from "@/lib/telegram-bot"
 
 export async function POST(request: Request, { params }: { params: { orderId: string; stepId: string } }) {
   const initData = request.headers.get("x-telegram-init-data")
@@ -16,10 +16,10 @@ export async function POST(request: Request, { params }: { params: { orderId: st
     return NextResponse.json({ error: "Step not found" }, { status: 404 })
   }
 
-  const adminId = process.env.ADMIN_USER_ID
-  if (adminId) {
+  const adminChatId = getAdminChatId()
+  if (adminChatId) {
     sendMessage({
-      chat_id: Number(adminId),
+      chat_id: adminChatId,
       text: `✅ Клиент отметил оплату по заявке #${params.orderId.slice(0, 6)}. Проверьте чек в админ-панели.`,
     }).catch(() => null)
   }

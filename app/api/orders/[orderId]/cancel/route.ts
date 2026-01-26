@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { cancelOrder, listOrderMessages, listOrderSteps } from "@/lib/store"
 import { requireTelegramInitData } from "@/lib/telegram"
-import { sendMessage } from "@/lib/telegram-bot"
+import { getAdminChatId, sendMessage } from "@/lib/telegram-bot"
 
 export async function POST(request: Request, { params }: { params: { orderId: string } }) {
   const initData = request.headers.get("x-telegram-init-data")
@@ -15,10 +15,10 @@ export async function POST(request: Request, { params }: { params: { orderId: st
     return NextResponse.json({ error: "Order not found" }, { status: 404 })
   }
 
-  const adminId = process.env.ADMIN_USER_ID
-  if (adminId) {
+  const adminChatId = getAdminChatId()
+  if (adminChatId) {
     sendMessage({
-      chat_id: Number(adminId),
+      chat_id: adminChatId,
       text: `⛔️ Клиент отменил заявку #${params.orderId.slice(0, 6)}.`,
     }).catch(() => null)
   }

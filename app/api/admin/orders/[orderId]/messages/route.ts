@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { addMessage, getOrderById, listOrderMessages } from "@/lib/store"
-import { sendMessage, sendPhoto } from "@/lib/telegram-bot"
+import { getAdminChatId, sendMessage, sendPhoto } from "@/lib/telegram-bot"
 import { requireAdminAuth } from "@/lib/admin-auth"
 
 const isImageFile = (url: string) => /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(url)
@@ -39,15 +39,15 @@ export async function POST(request: Request, { params }: { params: { orderId: st
   const telegramText = body.telegramText ?? body.text ?? ""
   const parseMode = body.parseMode
 
-  const adminId = process.env.ADMIN_USER_ID
-  if (adminId) {
+  const adminChatId = getAdminChatId()
+  if (adminChatId) {
     const adminNoticeLines = [
       `✉️ Сообщение отправлено клиенту по заявке #${params.orderId.slice(0, 6)}`,
       textForStorage ?? "",
       fileLink ? `📎 Файл: ${fileLink}` : "",
     ].filter(Boolean)
     sendMessage({
-      chat_id: Number(adminId),
+      chat_id: adminChatId,
       text: adminNoticeLines.join("\n"),
     }).catch(() => null)
   }
