@@ -89,6 +89,7 @@ export default function AdminDashboard() {
   const [isMessageUploading, setIsMessageUploading] = useState<boolean>(false)
   const [isFirstExchangeSending, setIsFirstExchangeSending] = useState<boolean>(false)
   const [isCheckInstructionSending, setIsCheckInstructionSending] = useState<boolean>(false)
+  const [isQrRequestSending, setIsQrRequestSending] = useState<boolean>(false)
   const [isPaymentDetailsSending, setIsPaymentDetailsSending] = useState<boolean>(false)
   const [sendingPaymentField, setSendingPaymentField] = useState<"details" | "bank" | "amount" | "email" | null>(null)
   const [isOrderClosing, setIsOrderClosing] = useState<boolean>(false)
@@ -526,6 +527,57 @@ iPhone (iOS):
     } finally {
       if (mountedRef.current) {
         setIsCheckInstructionSending(false)
+      }
+    }
+  }
+
+  const sendQrRequestMessage = async () => {
+    const sessionToken = checkAuthBeforeRequest()
+    if (!sessionToken || !selectedOrderId) return
+
+    const qrRequestText =
+      "Пожалуйста, пришлите в чат ваш QR-код Alipay для пополнения согласно инструкции. Сумму пополнения, пожалуйста, не указывайте."
+    const qrRequestImages = ["/alipay-qr-guide.jpg"]
+
+    setIsQrRequestSending(true)
+    try {
+      const messagePayloads = [
+        { text: qrRequestText, fileUrl: qrRequestImages[0] },
+        ...qrRequestImages.slice(1).map((fileUrl) => ({ fileUrl })),
+      ].filter((payload) => payload.text || payload.fileUrl)
+
+      for (const payload of messagePayloads) {
+        const response = await fetch(`/api/admin/orders/${selectedOrderId}/messages?token=${sessionToken}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        })
+        const data = await response.json()
+        if (response.ok && mountedRef.current) {
+          setOrderMessages((prev) => [...prev, data.message])
+        } else if (!response.ok) {
+          throw new Error("Failed to send QR request message")
+        }
+      }
+
+      if (mountedRef.current) {
+        toast({
+          title: "Сообщение отправлено",
+          description: "Запрос на QR-код отправлен клиенту.",
+        })
+      }
+    } catch (error) {
+      console.error("Send QR request error:", error)
+      if (mountedRef.current) {
+        toast({
+          title: "Ошибка",
+          description: "Не удалось отправить запрос на QR-код",
+          variant: "destructive",
+        })
+      }
+    } finally {
+      if (mountedRef.current) {
+        setIsQrRequestSending(false)
       }
     }
   }
@@ -1526,6 +1578,15 @@ iPhone (iOS):
                             className="w-full sm:w-auto"
                           >
                             {isCheckInstructionSending ? "Отправка..." : "Инструкция ЧЕК"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={sendQrRequestMessage}
+                            disabled={!selectedOrder || isQrRequestSending}
+                            className="w-full sm:w-auto"
+                          >
+                            {isQrRequestSending ? "Отправка..." : "ЗАПРОС QR"}
                           </Button>
                           <Button
                             size="sm"
