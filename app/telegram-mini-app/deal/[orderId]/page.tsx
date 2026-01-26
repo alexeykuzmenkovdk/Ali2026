@@ -82,6 +82,7 @@ export default function DealRoomPage() {
   const [hasMore, setHasMore] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [mediaPreview, setMediaPreview] = useState<{ url: string; type: "image" | "video" } | null>(null)
+  const [mediaIndex, setMediaIndex] = useState<number | null>(null)
   const [isChatPinnedToBottom, setIsChatPinnedToBottom] = useState(true)
   const [chatScrollRatio, setChatScrollRatio] = useState(0)
   const [unreadCount, setUnreadCount] = useState(0)
@@ -636,6 +637,14 @@ export default function DealRoomPage() {
     return "file"
   }
 
+  const imageUrls = useMemo(() => {
+    return combinedMessages
+      .filter((message) => message.senderRole === "admin")
+      .map((message) => message.fileUrl)
+      .filter((fileUrl): fileUrl is string => Boolean(fileUrl))
+      .filter((fileUrl) => resolveFileType(fileUrl) === "image")
+  }, [combinedMessages])
+
   const decodeUnicodeEscapes = (value: string) => {
     if (!/\\u[0-9a-fA-F]{4}/.test(value)) return value
     return value.replace(/\\u([0-9a-fA-F]{4})/g, (_, code) => String.fromCharCode(Number.parseInt(code, 16)))
@@ -654,7 +663,20 @@ export default function DealRoomPage() {
     const type = resolveFileType(fileUrl)
     if (type === "image" || type === "video") {
       setMediaPreview({ url: fileUrl, type })
+      if (type === "image") {
+        const index = imageUrls.findIndex((url) => url === fileUrl)
+        setMediaIndex(index >= 0 ? index : null)
+      } else {
+        setMediaIndex(null)
+      }
     }
+  }
+
+  const openImageByIndex = (index: number) => {
+    const nextUrl = imageUrls[index]
+    if (!nextUrl) return
+    setMediaPreview({ url: nextUrl, type: "image" })
+    setMediaIndex(index)
   }
 
   const statusLabel = (status: OrderStatus | undefined) => {
@@ -1035,7 +1057,15 @@ export default function DealRoomPage() {
         </section>
       </main>
 
-      <Dialog open={!!mediaPreview} onOpenChange={(open) => !open && setMediaPreview(null)}>
+      <Dialog
+        open={!!mediaPreview}
+        onOpenChange={(open) => {
+          if (!open) {
+            setMediaPreview(null)
+            setMediaIndex(null)
+          }
+        }}
+      >
         <DialogContent className="max-w-3xl bg-slate-950 text-white">
           <DialogHeader>
             <DialogTitle>Просмотр вложения</DialogTitle>
@@ -1045,6 +1075,31 @@ export default function DealRoomPage() {
           ) : mediaPreview?.type === "video" ? (
             <video src={mediaPreview.url} controls className="max-h-[70vh] w-full rounded-md" />
           ) : null}
+          {mediaPreview?.type === "image" && imageUrls.length > 1 && mediaIndex !== null && (
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-orange-400 text-orange-100"
+                  onClick={() => openImageByIndex((mediaIndex - 1 + imageUrls.length) % imageUrls.length)}
+                >
+                  ← Предыдущая
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-orange-400 text-orange-100"
+                  onClick={() => openImageByIndex((mediaIndex + 1) % imageUrls.length)}
+                >
+                  Следующая →
+                </Button>
+              </div>
+              <span className="text-xs text-slate-400">
+                {mediaIndex + 1} / {imageUrls.length}
+              </span>
+            </div>
+          )}
           {mediaPreview && (
             <div className="mt-4 flex flex-wrap gap-4 text-sm">
               <a href={mediaPreview.url} target="_blank" rel="noreferrer" className="text-orange-200 underline">
@@ -1053,6 +1108,20 @@ export default function DealRoomPage() {
               <a href={mediaPreview.url} download className="text-orange-200 underline">
                 Скачать
               </a>
+              {mediaPreview.type === "image" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveView("chat")
+                    setMediaPreview(null)
+                    setMediaIndex(null)
+                    scrollToBottom()
+                  }}
+                  className="text-orange-200 underline"
+                >
+                  Вернуться к чату
+                </button>
+              )}
             </div>
           )}
         </DialogContent>
