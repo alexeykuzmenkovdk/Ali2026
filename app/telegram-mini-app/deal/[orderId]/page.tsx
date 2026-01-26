@@ -223,12 +223,18 @@ export default function DealRoomPage() {
     return "file"
   }
 
+  const decodeUnicodeEscapes = (value: string) => {
+    if (!/\\u[0-9a-fA-F]{4}/.test(value)) return value
+    return value.replace(/\\u([0-9a-fA-F]{4})/g, (_, code) => String.fromCharCode(Number.parseInt(code, 16)))
+  }
+
   const renderMessageText = (text: string) => {
-    const match = text.match(/^\*\*([\s\S]+)\*\*$/)
+    const normalizedText = decodeUnicodeEscapes(text)
+    const match = normalizedText.match(/^\*\*([\s\S]+)\*\*$/)
     if (match) {
       return <div className="whitespace-pre-wrap font-bold">{match[1]}</div>
     }
-    return <div className="whitespace-pre-wrap">{text}</div>
+    return <div className="whitespace-pre-wrap">{normalizedText}</div>
   }
 
   const openMediaPreview = (fileUrl: string) => {
