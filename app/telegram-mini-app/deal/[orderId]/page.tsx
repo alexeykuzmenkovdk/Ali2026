@@ -58,9 +58,12 @@ export default function DealRoomPage() {
       } catch (error) {
         console.warn("Не удалось запросить fullscreen в Telegram WebApp", error)
       }
+      telegramWebApp.enableClosingConfirmation?.()
       setIsTelegram(true)
       setInitData(telegramWebApp.initData)
-      return
+      return () => {
+        telegramWebApp.disableClosingConfirmation?.()
+      }
     }
     setIsTelegram(false)
     setInitData("")
@@ -252,7 +255,7 @@ export default function DealRoomPage() {
 
   return (
     <div className="min-h-screen overscroll-none bg-slate-950 text-white">
-      <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-6 px-4 py-8">
+      <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-6 px-4 pb-8 pt-[calc(3.5rem+env(safe-area-inset-top))]">
         <div className="space-y-4 rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-950 via-slate-950 to-emerald-500/10 p-6">
           <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Комната сделки</p>
           <div className="space-y-2">
