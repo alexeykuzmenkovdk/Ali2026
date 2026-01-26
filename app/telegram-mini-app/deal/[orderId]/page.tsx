@@ -281,8 +281,8 @@ export default function DealRoomPage() {
         } transition-transform duration-200`}
         style={{ transform: `translateY(${pullOffset}px)`, willChange: "transform" }}
       >
-        <div className="space-y-4 rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-950 via-slate-950 to-emerald-500/10 p-6">
-          <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Комната сделки</p>
+        <div className="space-y-4 rounded-2xl border border-orange-500/20 bg-gradient-to-br from-slate-950 via-slate-950 to-orange-500/15 p-6 shadow-lg shadow-orange-500/10">
+          <p className="text-xs uppercase tracking-[0.3em] text-orange-200/70">Комната сделки</p>
           <div className="space-y-2">
             <h1 className="text-3xl font-semibold">P2P-сделка открыта</h1>
             <p className="text-slate-300">Общайтесь с админом и отслеживайте статус заявки в реальном времени.</p>
@@ -303,7 +303,7 @@ export default function DealRoomPage() {
           </Card>
         )}
 
-        <Card className="border-slate-800 bg-slate-900/60">
+        <Card className="border-slate-800 bg-slate-900/60 shadow-lg shadow-orange-500/10">
           <CardHeader>
             <CardTitle className="text-lg text-orange-400">Детали сделки</CardTitle>
             <CardDescription className="text-slate-400">
@@ -326,7 +326,7 @@ export default function DealRoomPage() {
           </CardContent>
         </Card>
 
-        <Card className="flex flex-1 flex-col border-slate-800 bg-slate-900/60">
+        <Card className="flex flex-1 flex-col border-slate-800 bg-slate-900/60 shadow-lg shadow-orange-500/10">
           <CardHeader>
             <CardTitle className="text-lg text-orange-400">Чат сделки</CardTitle>
             <CardDescription className="text-slate-400">
@@ -338,8 +338,7 @@ export default function DealRoomPage() {
               <div
                 ref={chatContainerRef}
                 onScroll={handleChatScroll}
-                className="flex-1 min-h-[50vh] max-h-[70vh] space-y-4 overflow-y-scroll rounded-lg border border-slate-800 bg-slate-950 p-4 pr-6 text-base leading-relaxed sm:min-h-[55vh] lg:min-h-[60vh]"
-                style={{ scrollbarWidth: "thin", scrollbarColor: "#f97316 #0f172a" }}
+                className="chat-scrollbar-hidden flex-1 min-h-[50vh] max-h-[70vh] space-y-4 overflow-y-auto rounded-lg border border-slate-800 bg-slate-950 p-4 pr-6 text-base leading-relaxed sm:min-h-[55vh] lg:min-h-[60vh]"
               >
                 {isLoading ? (
                   <div className="text-slate-400">Загрузка сообщений...</div>
@@ -354,7 +353,7 @@ export default function DealRoomPage() {
                       <div
                         className={`max-w-[80%] rounded-2xl px-4 py-3 ${
                           message.senderRole === "client"
-                            ? "bg-emerald-500/20 text-emerald-100"
+                            ? "bg-orange-500/20 text-orange-100"
                             : "bg-slate-800 text-slate-100"
                         }`}
                       >
@@ -380,7 +379,7 @@ export default function DealRoomPage() {
                                 href={message.fileUrl}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="inline-flex items-center text-emerald-200 underline"
+                                className="inline-flex items-center text-orange-200 underline"
                               >
                                 Открыть файл
                               </a>
@@ -391,12 +390,12 @@ export default function DealRoomPage() {
                                 <button
                                   type="button"
                                   onClick={() => openMediaPreview(message.fileUrl ?? "")}
-                                  className="text-emerald-200 underline"
+                                  className="text-orange-200 underline"
                                 >
                                   Открыть
                                 </button>
                               )}
-                              <a href={message.fileUrl} download className="text-emerald-200 underline">
+                              <a href={message.fileUrl} download className="text-orange-200 underline">
                                 Скачать
                               </a>
                             </div>
@@ -462,7 +461,7 @@ export default function DealRoomPage() {
               Если нужно выйти, вернитесь на главный экран мини-приложения.
               <button
                 type="button"
-                className="ml-2 text-emerald-300 underline-offset-2 hover:underline"
+                className="ml-2 text-orange-300 underline-offset-2 hover:underline"
                 onClick={() => router.push("/telegram-mini-app")}
               >
                 Вернуться назад
@@ -496,11 +495,11 @@ export default function DealRoomPage() {
                 href={mediaPreview.url}
                 target="_blank"
                 rel="noreferrer"
-                className="text-emerald-200 underline"
+                className="text-orange-200 underline"
               >
                 Открыть в новой вкладке
               </a>
-              <a href={mediaPreview.url} download className="text-emerald-200 underline">
+              <a href={mediaPreview.url} download className="text-orange-200 underline">
                 Скачать
               </a>
             </div>
