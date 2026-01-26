@@ -52,6 +52,12 @@ export default function DealRoomPage() {
     const telegramWebApp = window.Telegram?.WebApp
     if (telegramWebApp) {
       telegramWebApp.ready()
+      telegramWebApp.expand()
+      try {
+        telegramWebApp.requestFullscreen?.()
+      } catch (error) {
+        console.warn("Не удалось запросить fullscreen в Telegram WebApp", error)
+      }
       setIsTelegram(true)
       setInitData(telegramWebApp.initData)
       return
@@ -246,7 +252,7 @@ export default function DealRoomPage() {
 
   return (
     <div className="min-h-screen overscroll-none bg-slate-950 text-white">
-      <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 py-10">
+      <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-6 px-4 py-8">
         <div className="space-y-4 rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-950 via-slate-950 to-emerald-500/10 p-6">
           <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Комната сделки</p>
           <div className="space-y-2">
@@ -308,18 +314,18 @@ export default function DealRoomPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-slate-800 bg-slate-900/60">
+        <Card className="flex flex-1 flex-col border-slate-800 bg-slate-900/60">
           <CardHeader>
             <CardTitle className="text-lg">Чат сделки</CardTitle>
             <CardDescription className="text-slate-400">
               Сообщения синхронизируются с админ-панелью, оператор видит вашу заявку.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="flex flex-1 flex-col gap-4">
             <div
               ref={chatContainerRef}
               onScroll={handleChatScroll}
-              className="max-h-[520px] space-y-3 overflow-y-auto rounded-lg border border-slate-800 bg-slate-950 p-4 text-base"
+              className="flex-1 min-h-[50vh] max-h-[70vh] space-y-4 overflow-y-auto rounded-lg border border-slate-800 bg-slate-950 p-4 text-base leading-relaxed sm:min-h-[55vh] lg:min-h-[60vh]"
             >
               {isLoading ? (
                 <div className="text-slate-400">Загрузка сообщений...</div>
@@ -332,7 +338,7 @@ export default function DealRoomPage() {
                     className={`flex ${message.senderRole === "client" ? "justify-end" : "justify-start"}`}
                   >
                     <div
-                      className={`max-w-[80%] rounded-lg px-3 py-2 ${
+                      className={`max-w-[80%] rounded-2xl px-4 py-3 ${
                         message.senderRole === "client"
                           ? "bg-emerald-500/20 text-emerald-100"
                           : "bg-slate-800 text-slate-100"
