@@ -262,7 +262,9 @@ export default function DealRoomPage() {
   return (
     <div className="min-h-screen overscroll-none bg-slate-950 text-white">
       <main
-        className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-6 px-4 pb-8 pt-[calc(5.5rem+env(safe-area-inset-top))] transition-transform duration-200"
+        className={`mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-6 px-4 pb-8 ${
+          isTelegram ? "pt-[calc(7.5rem+env(safe-area-inset-top))]" : "pt-[calc(5.5rem+env(safe-area-inset-top))]"
+        } transition-transform duration-200`}
         style={{ transform: `translateY(${pullOffset}px)`, willChange: "transform" }}
       >
         <div className="space-y-4 rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-950 via-slate-950 to-emerald-500/10 p-6">
@@ -459,6 +461,11 @@ export default function DealRoomPage() {
                 Вернуться назад
               </button>
             </div>
+            <Button asChild variant="outline" className="mt-2 w-full border-emerald-400/60 text-emerald-100">
+              <a href="https://t.me/AlipayFast" target="_blank" rel="noreferrer">
+                Подписаться на Telegram канал AlipayFast, чтобы быть в курсе выгодных курсов и обновлений
+              </a>
+            </Button>
           </CardContent>
         </Card>
       </main>
