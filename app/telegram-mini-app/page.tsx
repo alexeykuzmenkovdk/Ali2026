@@ -474,9 +474,6 @@ export default function TelegramMiniAppPage() {
                 <span className="text-slate-300">Текущий курс</span>
                 <span className="text-orange-300">1 CNY = {exchangeRate.toFixed(2)} RUB</span>
               </div>
-              {!isManual && (
-                <div className="mt-2 text-xs text-slate-400">Базовый курс ЦБ: {baseRate.toFixed(2)} RUB</div>
-              )}
               <div className="mt-1 text-xs text-slate-500">
                 {isManual ? "Ручной курс" : "Автоматический курс"} • Обновлено:{" "}
                 {lastUpdated ? formatDate(lastUpdated) : "Загрузка..."}
