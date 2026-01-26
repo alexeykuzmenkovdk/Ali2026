@@ -554,43 +554,80 @@ export default function TelegramMiniAppPage() {
 
         <Card className="border-slate-800 bg-slate-900/60 shadow-lg shadow-orange-500/10">
           <CardHeader>
-            <CardTitle className="text-lg">Этапы сделки</CardTitle>
+            <CardTitle className="text-lg text-orange-200">
+              Инструкция по обмену рублей на юани в AlipayFast
+            </CardTitle>
             <CardDescription className="text-slate-400">
-              Поток как в P2P: заявка → подтверждение → чат → обработка админом.
+              Следуйте требованиям и шагам ниже, чтобы обмен прошёл без задержек.
             </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-4 text-sm">
-            {[
-              {
-                title: "Подать заявку",
-                description: "Заполните сумму и подтвердите отправку заявки в Telegram.",
-              },
-              {
-                title: "Заявка принята",
-                description: "Сделка фиксируется, и вы сразу попадаете в комнату сделки.",
-              },
-              {
-                title: "Комната сделки",
-                description: "Чат с админом синхронизируется с админ-панелью.",
-              },
-              {
-                title: "Админ обрабатывает",
-                description: "Администратор ведёт заявку через панель и подтверждает шаги.",
-              },
-            ].map((step, index) => (
-              <div
-                key={step.title}
-                className="flex gap-4 rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3"
-              >
-                <div className="flex h-8 w-8 items-center justify-center rounded-full border border-orange-500/40 bg-orange-500/10 text-orange-200">
-                  {index + 1}
+          <CardContent className="grid gap-5 text-sm text-slate-300">
+            <div>
+              <div className="text-sm font-semibold text-white">Обязательные требования</div>
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-slate-300">
+                <li>Установленное и настроенное приложение Alipay.</li>
+                <li>Установленное мобильное приложение Т-Банка.</li>
+              </ul>
+              <p className="mt-3 text-sm text-amber-300">
+                ❗️Обмен возможен только через Т-Банк. Другие банки и веб-версии приложений не
+                поддерживаются.
+              </p>
+              <p className="mt-3 text-slate-400">
+                Инструкции по установке и настройке Alipay, а также подключению Т-Банка доступны на
+                сайте{" "}
+                <a
+                  className="text-orange-200 underline underline-offset-2 transition hover:text-orange-100"
+                  href="https://alipayfast.ru"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Alipayfast.ru
+                </a>
+                .
+              </p>
+            </div>
+
+            <div className="border-t border-slate-800" />
+
+            <div className="grid gap-4">
+              <div className="text-sm font-semibold text-white">Этапы сделки</div>
+              {[
+                {
+                  title: "Создание заявки",
+                  description: "Пользователь оформляет заявку на обмен в приложении AlipayFast.",
+                },
+                {
+                  title: "Подтверждение администратором",
+                  description: "После проверки заявки вы получаете банковские реквизиты для оплаты.",
+                },
+                {
+                  title: "Оплата",
+                  description:
+                    "Произведите оплату строго по указанным реквизитам, исключительно из приложения Т-Банка. После оплаты отправьте чек из приложения банка.",
+                },
+                {
+                  title: "Предоставление QR-кода Alipay",
+                  description: "Отправьте QR-код для получения юаней из приложения Alipay.",
+                },
+                {
+                  title: "Подтверждение получения юаней",
+                  description: "Подтвердите зачисление средств в Alipay — сделка завершена ✅",
+                },
+              ].map((step, index) => (
+                <div
+                  key={step.title}
+                  className="flex gap-4 rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3"
+                >
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full border border-orange-500/40 bg-orange-500/10 text-orange-200">
+                    {index + 1}
+                  </div>
+                  <div>
+                    <div className="font-medium text-white">{step.title}</div>
+                    <div className="text-slate-400">{step.description}</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="font-medium text-white">{step.title}</div>
-                  <div className="text-slate-400">{step.description}</div>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </CardContent>
         </Card>
 
