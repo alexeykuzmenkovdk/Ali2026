@@ -400,7 +400,7 @@ export async function createOrder(data: {
       `INSERT INTO payment_steps
         (id, order_id, step_index, status, amount_rub, method, requisite_value, bank_name, receipt_email, created_at, updated_at)
        VALUES ($1, $2, 1, 'WAITING_FOR_PAYMENT', $3, 'SBP', $4, $5, $6, $7, $8)`,
-      [stepId, orderId, Math.round(data.totalRub / 2), "+7 999 888-77-66", "Т-Банк", "pay@alipayfast.ru", now, now],
+      [stepId, orderId, Math.round(data.totalRub / 2), "Реквизиты будут отправлены в чате", "Т-Банк", "pay@alipayfast.ru", now, now],
     )
     await pool.query(
       `INSERT INTO order_messages (id, order_id, sender_role, text, file_url, created_at)

@@ -1001,7 +1001,7 @@ export default function DealRoomPage() {
                   <div className="flex flex-wrap gap-2">
                     <Button
                       variant="outline"
-                      className="border-slate-700 text-slate-100"
+                      className="border-orange-400 bg-orange-500 text-white transition hover:bg-orange-400"
                       onClick={() => handleOrderAction("Я оплатил")}
                       disabled={isChatReadOnly}
                     >
@@ -1015,13 +1015,13 @@ export default function DealRoomPage() {
                         onChange={(event) => handleReceiptAction(event.target.files?.[0] ?? null)}
                         disabled={isChatReadOnly}
                       />
-                      <span className="inline-flex items-center rounded-md border border-slate-700 px-3 py-2 text-sm text-slate-100">
+                      <span className="inline-flex items-center rounded-md bg-orange-500 px-3 py-2 text-sm text-white transition hover:bg-orange-400">
                         Отправить чек
                       </span>
                     </label>
                     <Button
                       variant="outline"
-                      className="border-slate-700 text-slate-100"
+                      className="border-orange-400 bg-orange-500 text-white transition hover:bg-orange-400"
                       onClick={() => handleOrderAction("Позвать оператора")}
                       disabled={isChatReadOnly}
                     >

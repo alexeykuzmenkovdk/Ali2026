@@ -328,13 +328,11 @@ export default function TelegramMiniAppPage() {
         <div className="space-y-4 rounded-2xl border border-orange-500/20 bg-gradient-to-br from-slate-950 via-slate-950 to-orange-500/15 p-6 shadow-lg shadow-orange-500/10">
           <p className="text-xs uppercase tracking-[0.3em] text-orange-200/70">AlipayFast · Premium</p>
           <div className="flex flex-wrap items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-orange-500/30 bg-slate-950/80 p-2">
-              <img src="/alipayfast-logo.png" alt="AlipayFast" className="h-12 w-12 object-contain" />
+            <div className="flex h-20 w-20 items-center justify-center rounded-2xl border border-orange-500/30 bg-slate-950/80 p-2">
+              <img src="/alipayfast-logo.png" alt="AlipayFast" className="h-16 w-16 object-contain" />
             </div>
             <div className="min-w-[200px] flex-1 space-y-2">
-              <h1 className="text-3xl font-semibold">
-                Сервис по быстрому пополнению Alipay и WeChat для клиентов AlipayFast
-              </h1>
+              <h1 className="text-4xl font-semibold">AlipayFast</h1>
               <p className="text-slate-300">
                 Быстрые заявки, прозрачный курс и сопровождение админом в одной комфортной комнате сделки.
               </p>
@@ -360,7 +358,7 @@ export default function TelegramMiniAppPage() {
           <TabsContent value="active">
             <Card className="border-orange-500/30 bg-orange-500/10 shadow-lg shadow-orange-500/10">
               <CardHeader>
-                <CardTitle className="text-lg">Активные заявки</CardTitle>
+                <CardTitle className="text-lg text-orange-300">Активные заявки</CardTitle>
                 <CardDescription className="text-orange-100/80">
                   Можно держать до двух активных сделок. Откройте нужную комнату для общения с админом.
                 </CardDescription>
@@ -535,10 +533,10 @@ export default function TelegramMiniAppPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-orange-500/30 bg-gradient-to-br from-orange-500/10 via-slate-950 to-slate-950 shadow-lg shadow-orange-500/20">
+        <Card className="border-slate-800 bg-slate-900/60 shadow-lg shadow-orange-500/10">
           <CardHeader>
-            <CardTitle className="text-lg text-orange-200">Подпишитесь на наш Telegram</CardTitle>
-            <CardDescription className="text-orange-100/80">
+            <CardTitle className="text-lg text-orange-200">Подпишитесь на наш Telegram канал</CardTitle>
+            <CardDescription className="text-slate-400">
               Приоритетное обслуживание заявок для подписчиков канала, сигналы изменения курса, полезные новости.
             </CardDescription>
           </CardHeader>
@@ -548,7 +546,7 @@ export default function TelegramMiniAppPage() {
               className="h-12 w-full bg-orange-500 text-white transition hover:bg-orange-400"
             >
               <a href="https://t.me/AlipayFast" target="_blank" rel="noreferrer">
-                Подписаться на телеграмм канал Alipayfast
+                Подписаться на наш Telegram канал
               </a>
             </Button>
           </CardContent>
