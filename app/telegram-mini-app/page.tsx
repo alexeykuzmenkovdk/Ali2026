@@ -628,6 +628,30 @@ export default function TelegramMiniAppPage() {
           </CardContent>
         </Card>
 
+        <Card className="border-orange-500/30 bg-gradient-to-br from-slate-950 via-slate-950 to-orange-500/10 shadow-lg shadow-orange-500/10">
+          <CardContent className="grid gap-4 p-6 text-sm text-slate-300 sm:grid-cols-3">
+            {[
+              {
+                title: "🛡 С 2024 года",
+                description: "Работаем более 2 лет",
+              },
+              {
+                title: "🔁 1 000+",
+                description: "Успешных обменов",
+              },
+              {
+                title: "💬 Поддержка",
+                description: "Живой администратор 24/7 — @whaledator",
+              },
+            ].map((item) => (
+              <div key={item.title} className="space-y-2 rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3">
+                <div className="text-base font-semibold text-white">{item.title}</div>
+                <div className="text-slate-400">{item.description}</div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
       </main>
 
       <MiniAppOrderFormModal
