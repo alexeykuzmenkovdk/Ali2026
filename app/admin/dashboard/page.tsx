@@ -616,7 +616,6 @@ iPhone (iOS):
         return {
           text: `**Email для чека: ${email}**`,
           telegramText: `<b>Email для чека: ${email}</b>`,
-          fileUrl: "/alipayfast-logo.png",
         }
       default:
         return null
@@ -1590,7 +1589,7 @@ iPhone (iOS):
                           </Button>
                           <Button
                             size="sm"
-                            variant="outline"
+                            variant="default"
                             onClick={closeOrder}
                             disabled={
                               !selectedOrder ||
@@ -1598,7 +1597,7 @@ iPhone (iOS):
                               selectedOrder.status === "COMPLETED" ||
                               selectedOrder.status === "CANCELED"
                             }
-                            className="w-full sm:w-auto"
+                            className="w-full bg-orange-500 text-white hover:bg-orange-600 sm:ml-3 sm:w-auto"
                           >
                             {isOrderClosing ? "Закрытие..." : "Закрыть и в архив"}
                           </Button>
@@ -1608,8 +1607,8 @@ iPhone (iOS):
                       <div className="rounded-lg border bg-white p-4 text-sm">
                         <div className="font-medium text-gray-900">Реквизиты для оплаты</div>
                         <p className="mt-1 text-xs text-gray-500">
-                          Отправляет клиенту четыре жирных сообщения: реквизиты, банк с сноской, сумму и email с
-                          картинкой.
+                          Отправляет клиенту четыре жирных сообщения: реквизиты, банк с сноской, сумму и email без
+                          картинки.
                         </p>
                         <div className="mt-4 grid gap-3">
                           <div className="grid gap-2">
