@@ -92,6 +92,7 @@ export default function AdminDashboard() {
   const [paymentDetails, setPaymentDetails] = useState<string>("")
   const [paymentBank, setPaymentBank] = useState<string>("")
   const [paymentAmount, setPaymentAmount] = useState<string>("")
+  const [paymentEmail, setPaymentEmail] = useState<string>("")
   const [mediaPreview, setMediaPreview] = useState<{ url: string; type: "image" | "video" } | null>(null)
   const [isOrderChatPinnedToBottom, setIsOrderChatPinnedToBottom] = useState<boolean>(true)
   const orderChatContainerRef = useRef<HTMLDivElement | null>(null)
@@ -440,10 +441,12 @@ export default function AdminDashboard() {
       const trimmedBank = paymentBank.trim()
       const trimmedAmount = paymentAmount.trim()
 
-      if (!trimmedDetails || !trimmedBank || !trimmedAmount) {
+      const trimmedEmail = paymentEmail.trim()
+
+      if (!trimmedDetails || !trimmedBank || !trimmedAmount || !trimmedEmail) {
         toast({
           title: "Заполните все поля",
-          description: "Укажите реквизиты, банк и сумму перед отправкой.",
+          description: "Укажите реквизиты, банк, сумму и email перед отправкой.",
           variant: "destructive",
         })
         return
@@ -460,12 +463,19 @@ export default function AdminDashboard() {
           telegramText: `<b>Реквизиты: ${trimmedDetails}</b>`,
         },
         {
-          text: `**🏦 БАНК: ${trimmedBank} 🏦**`,
-          telegramText: `<b>🏦 БАНК: ${trimmedBank} 🏦</b>`,
+          text: `**🏦 БАНК: ${trimmedBank} 🏦**\n**В случае оплаты не на тот банк, возврат средств не возможен, внимательно проверяйте выбранный банк.**`,
+          telegramText:
+            "<b>🏦 БАНК: " +
+            `${trimmedBank} 🏦</b>\n<b>В случае оплаты не на тот банк, возврат средств не возможен, внимательно проверяйте выбранный банк.</b>`,
         },
         {
           text: `**Сумма: ${formattedAmount} ₽. Платим одним платежом строго указанную сумму. На оплату 15 минут.**`,
           telegramText: `<b>Сумма: ${formattedAmount} ₽. Платим одним платежом строго указанную сумму. На оплату 15 минут.</b>`,
+        },
+        {
+          text: `**Email для чека: ${trimmedEmail}**`,
+          telegramText: `<b>Email для чека: ${trimmedEmail}</b>`,
+          fileUrl: "/alipayfast-logo.png",
         },
       ]
 
@@ -473,7 +483,12 @@ export default function AdminDashboard() {
         const response = await fetch(`/api/admin/orders/${selectedOrderId}/messages?token=${sessionToken}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: message.text, telegramText: message.telegramText, parseMode: "HTML" }),
+          body: JSON.stringify({
+            text: message.text,
+            telegramText: message.telegramText,
+            parseMode: "HTML",
+            fileUrl: message.fileUrl,
+          }),
         })
         if (!response.ok) {
           throw new Error("Failed to send payment details")
@@ -483,9 +498,10 @@ export default function AdminDashboard() {
       setPaymentDetails("")
       setPaymentBank("")
       setPaymentAmount("")
+      setPaymentEmail("")
       toast({
         title: "Сообщения отправлены",
-        description: "Реквизиты, банк и сумма отправлены в чат сделки.",
+        description: "Реквизиты, банк, сумма и email отправлены в чат сделки.",
       })
     } catch (error) {
       console.error("Payment details error:", error)
@@ -1232,7 +1248,8 @@ export default function AdminDashboard() {
                       <div className="rounded-lg border bg-white p-4 text-sm">
                         <div className="font-medium text-gray-900">Реквизиты для оплаты</div>
                         <p className="mt-1 text-xs text-gray-500">
-                          Отправляет клиенту три жирных сообщения: реквизиты, банк и сумму с условиями оплаты.
+                          Отправляет клиенту четыре жирных сообщения: реквизиты, банк с сноской, сумму и email с
+                          картинкой.
                         </p>
                         <div className="mt-4 grid gap-3">
                           <div className="grid gap-2">
@@ -1261,6 +1278,16 @@ export default function AdminDashboard() {
                               value={paymentAmount}
                               onChange={(event) => setPaymentAmount(event.target.value)}
                               placeholder="Например, 12 500"
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <Label htmlFor="payment-email">Email для чека</Label>
+                            <Input
+                              id="payment-email"
+                              type="email"
+                              value={paymentEmail}
+                              onChange={(event) => setPaymentEmail(event.target.value)}
+                              placeholder="client@example.com"
                             />
                           </div>
                           <Button
