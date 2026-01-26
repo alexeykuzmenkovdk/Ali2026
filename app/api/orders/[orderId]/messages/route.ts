@@ -10,7 +10,14 @@ export async function GET(request: Request, { params }: { params: { orderId: str
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const messages = await listOrderMessages(params.orderId)
+  const { searchParams } = new URL(request.url)
+  const limitParam = searchParams.get("limit")
+  const beforeMessageId = searchParams.get("before")
+  const limit = limitParam ? Number(limitParam) : undefined
+  const messages = await listOrderMessages(params.orderId, {
+    limit: Number.isNaN(limit) ? undefined : limit,
+    beforeMessageId: beforeMessageId || undefined,
+  })
   return NextResponse.json({ messages })
 }
 
