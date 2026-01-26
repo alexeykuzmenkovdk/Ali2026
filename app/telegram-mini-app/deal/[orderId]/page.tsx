@@ -2,12 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { Switch } from "@/components/ui/switch"
 import { useTelegramSwipeDownGuard } from "@/lib/telegram-swipe-guard"
 
 const MESSAGE_PAGE_SIZE = 50
@@ -95,6 +95,7 @@ export default function DealRoomPage() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [firstUnreadId, setFirstUnreadId] = useState<string | null>(null)
   const [lastReadMessageId, setLastReadMessageId] = useState<string | null>(null)
+  const [activeView, setActiveView] = useState<"chat" | "details">("chat")
 
   const chatContainerRef = useRef<HTMLDivElement | null>(null)
   const bottomRef = useRef<HTMLDivElement | null>(null)
@@ -742,6 +743,11 @@ export default function DealRoomPage() {
     void copyText(lines, "Реквизиты скопированы")
   }
 
+  const handleCopyValue = (label: string, value?: string | number | null) => {
+    if (!value) return
+    void copyText(`${label}: ${value}`)
+  }
+
   const handleOrderAction = (label: string) => {
     const systemText = `Системное событие: ${label}`
     void handleSend({ textOverride: systemText, isSystem: true })
@@ -767,18 +773,29 @@ export default function DealRoomPage() {
         } transition-transform duration-200`}
         style={{ transform: `translateY(${pullOffset}px)`, willChange: "transform" }}
       >
-        <header className="sticky top-[calc(env(safe-area-inset-top)+0.75rem)] z-20 space-y-3 rounded-2xl border border-orange-500/20 bg-slate-950/90 p-4 backdrop-blur">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex-1">
-              <p className="text-xs uppercase tracking-[0.3em] text-orange-200/70">Комната ордера</p>
+        <header className="sticky top-[calc(env(safe-area-inset-top)+0.75rem)] z-30 space-y-3 rounded-2xl border border-orange-500/20 bg-slate-950/90 p-4 backdrop-blur">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="space-y-1">
+              <p className="text-xs uppercase tracking-[0.3em] text-orange-200/70">Комната сделки</p>
               <h1 className="text-2xl font-semibold">
                 {order ? `Ордер #${order.id.slice(0, 6)}` : "Загрузка ордера"}
               </h1>
             </div>
-            <Badge className="bg-orange-500/20 text-orange-100">{statusLabel(order?.status)}</Badge>
+            <div className="flex flex-wrap items-center gap-3">
+              <Badge className="bg-orange-500/20 text-orange-100">{statusLabel(order?.status)}</Badge>
+              <div className="flex items-center gap-3 rounded-full border border-orange-500/30 bg-slate-900/80 px-3 py-2 text-xs text-orange-200">
+                <span>{activeView === "chat" ? "Детали сделки" : "Вернуться в чат"}</span>
+                <Switch
+                  checked={activeView === "details"}
+                  onCheckedChange={(checked) => setActiveView(checked ? "details" : "chat")}
+                  className="data-[state=checked]:bg-orange-500 data-[state=unchecked]:bg-slate-700"
+                  aria-label={activeView === "chat" ? "Открыть детали сделки" : "Вернуться в чат"}
+                />
+              </div>
+            </div>
           </div>
           <p className="text-sm text-slate-300">
-            Быстро скопируйте реквизиты, отметьте оплату или отправьте чек оператору.
+            Общайтесь с оператором и быстро переключайтесь между чатом и деталями сделки.
           </p>
         </header>
 
@@ -797,108 +814,13 @@ export default function DealRoomPage() {
         )}
 
         <section className="mt-6 flex flex-1 flex-col gap-4 overflow-hidden">
-          <Accordion type="single" collapsible defaultValue="details">
-            <AccordionItem value="details" className="rounded-2xl border border-slate-800 bg-slate-900/60">
-              <AccordionTrigger className="px-4 py-3 text-left text-orange-200">Детали ордера</AccordionTrigger>
-              <AccordionContent className="px-4 pb-4">
-                <div className="space-y-3 text-sm">
-                  <div className="grid gap-2 md:grid-cols-2">
-                    <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
-                      <span>Сумма</span>
-                      <span className="text-slate-200">
-                        {order ? `${order.totalRub.toLocaleString("ru-RU")} ₽` : "—"}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
-                      <span>Сумма (CNY)</span>
-                      <span className="text-slate-200">{order ? `${order.totalCny.toFixed(2)} CNY` : "—"}</span>
-                    </div>
-                    <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
-                      <span>Курс</span>
-                      <span className="text-slate-200">{order ? `${order.rate.toFixed(2)} RUB` : "—"}</span>
-                    </div>
-                    <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
-                      <span>Ник</span>
-                      <span className="text-slate-200">{order?.contactUsername ? `@${order.contactUsername}` : "—"}</span>
-                    </div>
-                    <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
-                      <span>Телефон</span>
-                      <span className="text-slate-200">{order?.contactPhone ?? "—"}</span>
-                    </div>
-                    <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
-                      <span>Alipay ID</span>
-                      <span className="text-slate-200">{order?.alipayId ?? "—"}</span>
-                    </div>
-                  </div>
-
-                  {steps[0] && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
-                        <span>Банк</span>
-                        <span className="text-slate-200">{steps[0].bankName}</span>
-                      </div>
-                      <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
-                        <span>Реквизиты</span>
-                        <span className="text-slate-200">{steps[0].requisiteValue}</span>
-                      </div>
-                      <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
-                        <span>Email для чека</span>
-                        <span className="text-slate-200">{steps[0].receiptEmail}</span>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex flex-wrap gap-2">
-                    <Button variant="outline" className="border-slate-700 text-slate-100" onClick={handleCopyAll}>
-                      Скопировать все
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="border-slate-700 text-slate-100"
-                      onClick={() => handleOrderAction("Я оплатил")}
-                      disabled={isChatReadOnly}
-                    >
-                      Я оплатил
-                    </Button>
-                    <label className="inline-flex">
-                      <input
-                        type="file"
-                        accept="image/*,application/pdf"
-                        className="hidden"
-                        onChange={(event) => handleReceiptAction(event.target.files?.[0] ?? null)}
-                        disabled={isChatReadOnly}
-                      />
-                      <span className="inline-flex items-center rounded-md border border-slate-700 px-3 py-2 text-sm text-slate-100">
-                        Отправить чек
-                      </span>
-                    </label>
-                    <Button
-                      variant="outline"
-                      className="border-slate-700 text-slate-100"
-                      onClick={() => handleOrderAction("Позвать оператора")}
-                      disabled={isChatReadOnly}
-                    >
-                      Позвать оператора
-                    </Button>
-                  </div>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-
-          <Card className="flex flex-1 flex-col overflow-hidden border-slate-800 bg-slate-900/60 shadow-lg shadow-orange-500/10">
-            <CardHeader>
-              <CardTitle className="text-lg text-orange-400">Чат</CardTitle>
-              <CardDescription className="text-slate-400">
-                История сообщений и быстрые действия внутри комнаты ордера.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-1 flex-col gap-4 overflow-hidden pb-0">
+          {activeView === "chat" ? (
+            <div className="flex flex-1 flex-col overflow-hidden rounded-3xl border border-slate-800 bg-slate-900/50">
               <div className="relative flex-1 overflow-hidden">
                 <div
                   ref={chatContainerRef}
                   onScroll={handleChatScroll}
-                  className="chat-scrollbar-hidden flex h-full flex-col gap-4 overflow-y-auto rounded-lg border border-slate-800 bg-slate-950 p-4 text-base leading-relaxed"
+                  className="chat-scrollbar-hidden flex h-full flex-col gap-4 overflow-y-auto bg-slate-950/80 p-4 text-base leading-relaxed"
                 >
                   {isLoading ? (
                     <div className="text-slate-400">Загрузка сообщений...</div>
@@ -1030,7 +952,7 @@ export default function DealRoomPage() {
                 )}
               </div>
 
-              <div className="sticky bottom-0 flex flex-col gap-2 bg-slate-900/80 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur">
+              <div className="sticky bottom-0 flex flex-col gap-2 border-t border-slate-800 bg-slate-900/90 px-3 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur">
                 <div className="flex flex-wrap gap-2">
                   {QUICK_REPLIES.map((reply) => (
                     <button
@@ -1113,8 +1035,139 @@ export default function DealRoomPage() {
                   </button>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          ) : (
+            <div className="flex flex-1 flex-col gap-4 overflow-y-auto rounded-3xl border border-slate-800 bg-slate-900/60 p-4">
+              <Card className="border-orange-500/30 bg-slate-950/80">
+                <CardHeader>
+                  <CardTitle className="text-lg text-orange-200">Детали сделки</CardTitle>
+                  <CardDescription className="text-slate-400">
+                    Реквизиты появятся только после отправки администратором.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 text-sm">
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
+                      <span>Сумма</span>
+                      <span className="text-slate-200">
+                        {order ? `${order.totalRub.toLocaleString("ru-RU")} ₽` : "—"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
+                      <span>Сумма (CNY)</span>
+                      <span className="text-slate-200">{order ? `${order.totalCny.toFixed(2)} CNY` : "—"}</span>
+                    </div>
+                    <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
+                      <span>Курс</span>
+                      <span className="text-slate-200">{order ? `${order.rate.toFixed(2)} RUB` : "—"}</span>
+                    </div>
+                    <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
+                      <span>Ник</span>
+                      <span className="text-slate-200">{order?.contactUsername ? `@${order.contactUsername}` : "—"}</span>
+                    </div>
+                    <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
+                      <span>Телефон</span>
+                      <span className="text-slate-200">{order?.contactPhone ?? "—"}</span>
+                    </div>
+                    <div className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
+                      <span>Alipay ID</span>
+                      <span className="text-slate-200">{order?.alipayId ?? "—"}</span>
+                    </div>
+                  </div>
+
+                  {steps[0] ? (
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
+                        <span>Банк</span>
+                        <div className="flex items-center gap-2 text-slate-200">
+                          <span>{steps[0].bankName}</span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-orange-400/40 text-orange-200"
+                            onClick={() => handleCopyValue("Банк", steps[0].bankName)}
+                          >
+                            Копировать
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
+                        <span>Реквизиты</span>
+                        <div className="flex items-center gap-2 text-slate-200">
+                          <span className="break-all">{steps[0].requisiteValue}</span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-orange-400/40 text-orange-200"
+                            onClick={() => handleCopyValue("Реквизиты", steps[0].requisiteValue)}
+                          >
+                            Копировать
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
+                        <span>Email для чека</span>
+                        <div className="flex items-center gap-2 text-slate-200">
+                          <span>{steps[0].receiptEmail}</span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-orange-400/40 text-orange-200"
+                            onClick={() => handleCopyValue("Email для чека", steps[0].receiptEmail)}
+                          >
+                            Копировать
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-dashed border-orange-400/40 bg-orange-500/10 px-4 py-3 text-sm text-orange-100">
+                      Реквизиты появятся после того, как администратор отправит их в чате.
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="outline"
+                      className="border-orange-400/40 text-orange-200"
+                      onClick={handleCopyAll}
+                      disabled={!steps[0]}
+                    >
+                      Скопировать все
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="border-slate-700 text-slate-100"
+                      onClick={() => handleOrderAction("Я оплатил")}
+                      disabled={isChatReadOnly}
+                    >
+                      Я оплатил
+                    </Button>
+                    <label className="inline-flex">
+                      <input
+                        type="file"
+                        accept="image/*,application/pdf"
+                        className="hidden"
+                        onChange={(event) => handleReceiptAction(event.target.files?.[0] ?? null)}
+                        disabled={isChatReadOnly}
+                      />
+                      <span className="inline-flex items-center rounded-md border border-slate-700 px-3 py-2 text-sm text-slate-100">
+                        Отправить чек
+                      </span>
+                    </label>
+                    <Button
+                      variant="outline"
+                      className="border-slate-700 text-slate-100"
+                      onClick={() => handleOrderAction("Позвать оператора")}
+                      disabled={isChatReadOnly}
+                    >
+                      Позвать оператора
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </section>
       </main>
 
