@@ -88,6 +88,7 @@ export default function AdminDashboard() {
   const [isMessageSending, setIsMessageSending] = useState<boolean>(false)
   const [isMessageUploading, setIsMessageUploading] = useState<boolean>(false)
   const [isPaymentDetailsSending, setIsPaymentDetailsSending] = useState<boolean>(false)
+  const [sendingPaymentField, setSendingPaymentField] = useState<"details" | "bank" | "amount" | "email" | null>(null)
   const [isOrderClosing, setIsOrderClosing] = useState<boolean>(false)
   const [paymentDetails, setPaymentDetails] = useState<string>("")
   const [paymentBank, setPaymentBank] = useState<string>("")
@@ -96,7 +97,6 @@ export default function AdminDashboard() {
   const [mediaPreview, setMediaPreview] = useState<{ url: string; type: "image" | "video" } | null>(null)
   const [isOrderChatPinnedToBottom, setIsOrderChatPinnedToBottom] = useState<boolean>(true)
   const orderChatContainerRef = useRef<HTMLDivElement | null>(null)
-  const orderChatBottomRef = useRef<HTMLDivElement | null>(null)
   const selectedOrderIdRef = useRef<string>("")
 
   const [showcaseItems, setShowcaseItems] = useState<ShowcaseItem[]>([])
@@ -371,7 +371,9 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (!isOrderChatPinnedToBottom) return
-    orderChatBottomRef.current?.scrollIntoView({ behavior: "smooth" })
+    const container = orderChatContainerRef.current
+    if (!container) return
+    container.scrollTo({ top: container.scrollHeight, behavior: "auto" })
   }, [orderMessages, isOrderChatPinnedToBottom])
 
   useEffect(() => {
@@ -431,6 +433,109 @@ export default function AdminDashboard() {
     }
   }
 
+  const getFormattedPaymentAmount = (value: string) => {
+    const amountValue = Number(value.replace(/\s/g, "").replace(",", "."))
+    return Number.isFinite(amountValue) ? amountValue.toLocaleString("ru-RU") : value
+  }
+
+  const buildPaymentMessage = (
+    field: "details" | "bank" | "amount" | "email",
+    details: string,
+    bank: string,
+    amount: string,
+    email: string,
+  ) => {
+    switch (field) {
+      case "details":
+        return {
+          text: `**Реквизиты: ${details}**`,
+          telegramText: `<b>Реквизиты: ${details}</b>`,
+        }
+      case "bank":
+        return {
+          text: `**🏦 БАНК: ${bank} 🏦**\n**В случае оплаты не на тот банк, возврат средств не возможен, внимательно проверяйте выбранный банк.**`,
+          telegramText:
+            "<b>🏦 БАНК: " +
+            `${bank} 🏦</b>\n<b>В случае оплаты не на тот банк, возврат средств не возможен, внимательно проверяйте выбранный банк.</b>`,
+        }
+      case "amount":
+        return {
+          text: `**Сумма: ${amount} ₽. Платим одним платежом строго указанную сумму. На оплату 15 минут.**`,
+          telegramText: `<b>Сумма: ${amount} ₽. Платим одним платежом строго указанную сумму. На оплату 15 минут.</b>`,
+        }
+      case "email":
+        return {
+          text: `**Email для чека: ${email}**`,
+          telegramText: `<b>Email для чека: ${email}</b>`,
+          fileUrl: "/alipayfast-logo.png",
+        }
+      default:
+        return null
+    }
+  }
+
+  const sendPaymentDetailItem = async (field: "details" | "bank" | "amount" | "email") => {
+    const sessionToken = checkAuthBeforeRequest()
+    if (!sessionToken || !selectedOrderId) return
+
+    const trimmedDetails = paymentDetails.trim()
+    const trimmedBank = paymentBank.trim()
+    const trimmedAmount = paymentAmount.trim()
+    const trimmedEmail = paymentEmail.trim()
+
+    const formattedAmount = getFormattedPaymentAmount(trimmedAmount)
+
+    const requiredFieldEmpty =
+      (field === "details" && !trimmedDetails) ||
+      (field === "bank" && !trimmedBank) ||
+      (field === "amount" && !trimmedAmount) ||
+      (field === "email" && !trimmedEmail)
+
+    if (requiredFieldEmpty) {
+      toast({
+        title: "Поле не заполнено",
+        description: "Заполните поле перед отправкой сообщения клиенту.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const message = buildPaymentMessage(field, trimmedDetails, trimmedBank, formattedAmount, trimmedEmail)
+    if (!message) return
+
+    setSendingPaymentField(field)
+    try {
+      const response = await fetch(`/api/admin/orders/${selectedOrderId}/messages?token=${sessionToken}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: message.text,
+          telegramText: message.telegramText,
+          parseMode: "HTML",
+          fileUrl: message.fileUrl,
+        }),
+      })
+      if (!response.ok) {
+        throw new Error("Failed to send payment detail")
+      }
+      toast({
+        title: "Сообщение отправлено",
+        description: "Данные отправлены в чат сделки.",
+      })
+    } catch (error) {
+      console.error("Payment detail error:", error)
+      toast({
+        title: "Ошибка",
+        description: "Не удалось отправить данные клиенту",
+        variant: "destructive",
+      })
+    } finally {
+      if (mountedRef.current) {
+        setSendingPaymentField(null)
+      }
+    }
+  }
+
   const sendPaymentDetails = async () => {
     const sessionToken = checkAuthBeforeRequest()
     if (!sessionToken || !selectedOrderId) return
@@ -440,7 +545,6 @@ export default function AdminDashboard() {
       const trimmedDetails = paymentDetails.trim()
       const trimmedBank = paymentBank.trim()
       const trimmedAmount = paymentAmount.trim()
-
       const trimmedEmail = paymentEmail.trim()
 
       if (!trimmedDetails || !trimmedBank || !trimmedAmount || !trimmedEmail) {
@@ -452,32 +556,14 @@ export default function AdminDashboard() {
         return
       }
 
-      const amountValue = Number(trimmedAmount.replace(/\s/g, "").replace(",", "."))
-      const formattedAmount = Number.isFinite(amountValue)
-        ? amountValue.toLocaleString("ru-RU")
-        : trimmedAmount
+      const formattedAmount = getFormattedPaymentAmount(trimmedAmount)
 
       const messages = [
-        {
-          text: `**Реквизиты: ${trimmedDetails}**`,
-          telegramText: `<b>Реквизиты: ${trimmedDetails}</b>`,
-        },
-        {
-          text: `**🏦 БАНК: ${trimmedBank} 🏦**\n**В случае оплаты не на тот банк, возврат средств не возможен, внимательно проверяйте выбранный банк.**`,
-          telegramText:
-            "<b>🏦 БАНК: " +
-            `${trimmedBank} 🏦</b>\n<b>В случае оплаты не на тот банк, возврат средств не возможен, внимательно проверяйте выбранный банк.</b>`,
-        },
-        {
-          text: `**Сумма: ${formattedAmount} ₽. Платим одним платежом строго указанную сумму. На оплату 15 минут.**`,
-          telegramText: `<b>Сумма: ${formattedAmount} ₽. Платим одним платежом строго указанную сумму. На оплату 15 минут.</b>`,
-        },
-        {
-          text: `**Email для чека: ${trimmedEmail}**`,
-          telegramText: `<b>Email для чека: ${trimmedEmail}</b>`,
-          fileUrl: "/alipayfast-logo.png",
-        },
-      ]
+        buildPaymentMessage("details", trimmedDetails, trimmedBank, formattedAmount, trimmedEmail),
+        buildPaymentMessage("bank", trimmedDetails, trimmedBank, formattedAmount, trimmedEmail),
+        buildPaymentMessage("amount", trimmedDetails, trimmedBank, formattedAmount, trimmedEmail),
+        buildPaymentMessage("email", trimmedDetails, trimmedBank, formattedAmount, trimmedEmail),
+      ].filter(Boolean) as Array<{ text: string; telegramText: string; fileUrl?: string }>
 
       for (const message of messages) {
         const response = await fetch(`/api/admin/orders/${selectedOrderId}/messages?token=${sessionToken}`, {
@@ -1105,6 +1191,8 @@ export default function AdminDashboard() {
   }
 
   const selectedOrder = orders.find((order) => order.id === selectedOrderId)
+  const activeOrders = orders.filter((order) => order.status !== "COMPLETED" && order.status !== "CANCELED")
+  const archivedOrders = orders.filter((order) => order.status === "COMPLETED" || order.status === "CANCELED")
 
   if (isLoading) {
     return (
@@ -1158,49 +1246,109 @@ export default function AdminDashboard() {
 
           <TabsContent value="orders">
             <div className="grid gap-8 lg:grid-cols-[360px_1fr]">
-              <Card className="border-2 shadow-md">
-                <CardHeader>
-                  <CardTitle>Входящие заявки</CardTitle>
-                  <CardDescription>Список заказов, поступивших от клиентов</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {isOrdersLoading ? (
-                    <div className="text-sm text-gray-500">Загрузка заявок...</div>
-                  ) : orders.length === 0 ? (
-                    <div className="text-sm text-gray-500">Заявок пока нет.</div>
-                  ) : (
-                    <div className="space-y-3">
-                      {orders.map((order) => (
-                        <button
-                          key={order.id}
-                          type="button"
-                          onClick={() => setSelectedOrderId(order.id)}
-                          className={`w-full rounded-lg border px-4 py-3 text-left transition ${
-                            selectedOrderId === order.id ? "border-orange-500 bg-orange-50" : "border-gray-200 bg-white"
-                          }`}
-                        >
-                          <div className="text-sm font-semibold text-gray-900">{formatOrderLabel(order)}</div>
-                          <div className="mt-2 text-xs text-gray-600">
-                            Статус: <span className="font-medium">{order.status}</span>
-                          </div>
-                          <div className="mt-1 text-xs text-gray-600">
-                            Сумма: <span className="font-medium">{order.totalRub} ₽</span>
-                          </div>
-                          {order.lastMessage && (
-                            <div className="mt-2 text-xs text-gray-500 line-clamp-2">Последнее: {order.lastMessage}</div>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-                <CardFooter>
-                  <Button variant="outline" onClick={fetchOrders} disabled={isOrdersLoading} className="w-full">
-                    <RefreshCw className={`h-4 w-4 mr-2 ${isOrdersLoading ? "animate-spin" : ""}`} />
-                    Обновить список
-                  </Button>
-                </CardFooter>
-              </Card>
+              <div className="space-y-6">
+                <Card className="border-2 shadow-md">
+                  <CardHeader>
+                    <CardTitle>Входящие заявки</CardTitle>
+                    <CardDescription>Список активных заказов, поступивших от клиентов</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {isOrdersLoading && activeOrders.length > 0 && (
+                      <div className="mb-3 flex items-center gap-2 text-xs text-gray-400">
+                        <RefreshCw className="h-3 w-3 animate-spin" />
+                        Обновляем список...
+                      </div>
+                    )}
+                    {isOrdersLoading && activeOrders.length === 0 ? (
+                      <div className="text-sm text-gray-500">Загрузка заявок...</div>
+                    ) : activeOrders.length === 0 ? (
+                      <div className="text-sm text-gray-500">Активных заявок пока нет.</div>
+                    ) : (
+                      <div className="space-y-3">
+                        {activeOrders.map((order) => (
+                          <button
+                            key={order.id}
+                            type="button"
+                            onClick={() => setSelectedOrderId(order.id)}
+                            className={`w-full rounded-lg border px-4 py-3 text-left transition ${
+                              selectedOrderId === order.id
+                                ? "border-orange-500 bg-orange-50"
+                                : "border-gray-200 bg-white"
+                            }`}
+                          >
+                            <div className="text-sm font-semibold text-gray-900">{formatOrderLabel(order)}</div>
+                            <div className="mt-2 text-xs text-gray-600">
+                              Статус: <span className="font-medium">{order.status}</span>
+                            </div>
+                            <div className="mt-1 text-xs text-gray-600">
+                              Сумма: <span className="font-medium">{order.totalRub} ₽</span>
+                            </div>
+                            {order.lastMessage && (
+                              <div className="mt-2 text-xs text-gray-500 line-clamp-2">
+                                Последнее: {order.lastMessage}
+                              </div>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                  <CardFooter>
+                    <Button variant="outline" onClick={fetchOrders} disabled={isOrdersLoading} className="w-full">
+                      <RefreshCw className={`h-4 w-4 mr-2 ${isOrdersLoading ? "animate-spin" : ""}`} />
+                      Обновить список
+                    </Button>
+                  </CardFooter>
+                </Card>
+
+                <Card className="border-2 shadow-md">
+                  <CardHeader>
+                    <CardTitle>Архив заявок</CardTitle>
+                    <CardDescription>Завершённые и отменённые сделки</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {isOrdersLoading && archivedOrders.length > 0 && (
+                      <div className="mb-3 flex items-center gap-2 text-xs text-gray-400">
+                        <RefreshCw className="h-3 w-3 animate-spin" />
+                        Обновляем архив...
+                      </div>
+                    )}
+                    {isOrdersLoading && archivedOrders.length === 0 ? (
+                      <div className="text-sm text-gray-500">Загрузка архива...</div>
+                    ) : archivedOrders.length === 0 ? (
+                      <div className="text-sm text-gray-500">Архив пока пуст.</div>
+                    ) : (
+                      <div className="space-y-3">
+                        {archivedOrders.map((order) => (
+                          <button
+                            key={order.id}
+                            type="button"
+                            onClick={() => setSelectedOrderId(order.id)}
+                            className={`w-full rounded-lg border px-4 py-3 text-left transition ${
+                              selectedOrderId === order.id
+                                ? "border-orange-500 bg-orange-50"
+                                : "border-gray-200 bg-white"
+                            }`}
+                          >
+                            <div className="text-sm font-semibold text-gray-900">{formatOrderLabel(order)}</div>
+                            <div className="mt-2 text-xs text-gray-600">
+                              Статус: <span className="font-medium">{order.status}</span>
+                            </div>
+                            <div className="mt-1 text-xs text-gray-600">
+                              Сумма: <span className="font-medium">{order.totalRub} ₽</span>
+                            </div>
+                            {order.lastMessage && (
+                              <div className="mt-2 text-xs text-gray-500 line-clamp-2">
+                                Последнее: {order.lastMessage}
+                              </div>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
 
               <Card className="border-2 shadow-md">
                 <CardHeader>
@@ -1254,41 +1402,85 @@ export default function AdminDashboard() {
                         <div className="mt-4 grid gap-3">
                           <div className="grid gap-2">
                             <Label htmlFor="payment-details">Реквизиты (телефон или карта)</Label>
-                            <Input
-                              id="payment-details"
-                              value={paymentDetails}
-                              onChange={(event) => setPaymentDetails(event.target.value)}
-                              placeholder="Например, +7 900 000-00-00 или 4276 0000 0000 0000"
-                            />
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                              <Input
+                                id="payment-details"
+                                value={paymentDetails}
+                                onChange={(event) => setPaymentDetails(event.target.value)}
+                                placeholder="Например, +7 900 000-00-00 или 4276 0000 0000 0000"
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => sendPaymentDetailItem("details")}
+                                disabled={isPaymentDetailsSending || sendingPaymentField === "details"}
+                                className="sm:w-40"
+                              >
+                                {sendingPaymentField === "details" ? "Отправка..." : "Отправить"}
+                              </Button>
+                            </div>
                           </div>
                           <div className="grid gap-2">
                             <Label htmlFor="payment-bank">Банк</Label>
-                            <Input
-                              id="payment-bank"
-                              value={paymentBank}
-                              onChange={(event) => setPaymentBank(event.target.value)}
-                              placeholder="Сбербанк, Озон, Другой"
-                            />
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                              <Input
+                                id="payment-bank"
+                                value={paymentBank}
+                                onChange={(event) => setPaymentBank(event.target.value)}
+                                placeholder="Сбербанк, Озон, Другой"
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => sendPaymentDetailItem("bank")}
+                                disabled={isPaymentDetailsSending || sendingPaymentField === "bank"}
+                                className="sm:w-40"
+                              >
+                                {sendingPaymentField === "bank" ? "Отправка..." : "Отправить"}
+                              </Button>
+                            </div>
                           </div>
                           <div className="grid gap-2">
                             <Label htmlFor="payment-amount">Сумма (₽)</Label>
-                            <Input
-                              id="payment-amount"
-                              inputMode="decimal"
-                              value={paymentAmount}
-                              onChange={(event) => setPaymentAmount(event.target.value)}
-                              placeholder="Например, 12 500"
-                            />
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                              <Input
+                                id="payment-amount"
+                                inputMode="decimal"
+                                value={paymentAmount}
+                                onChange={(event) => setPaymentAmount(event.target.value)}
+                                placeholder="Например, 12 500"
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => sendPaymentDetailItem("amount")}
+                                disabled={isPaymentDetailsSending || sendingPaymentField === "amount"}
+                                className="sm:w-40"
+                              >
+                                {sendingPaymentField === "amount" ? "Отправка..." : "Отправить"}
+                              </Button>
+                            </div>
                           </div>
                           <div className="grid gap-2">
                             <Label htmlFor="payment-email">Email для чека</Label>
-                            <Input
-                              id="payment-email"
-                              type="email"
-                              value={paymentEmail}
-                              onChange={(event) => setPaymentEmail(event.target.value)}
-                              placeholder="client@example.com"
-                            />
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                              <Input
+                                id="payment-email"
+                                type="email"
+                                value={paymentEmail}
+                                onChange={(event) => setPaymentEmail(event.target.value)}
+                                placeholder="client@example.com"
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => sendPaymentDetailItem("email")}
+                                disabled={isPaymentDetailsSending || sendingPaymentField === "email"}
+                                className="sm:w-40"
+                              >
+                                {sendingPaymentField === "email" ? "Отправка..." : "Отправить"}
+                              </Button>
+                            </div>
                           </div>
                           <Button
                             onClick={sendPaymentDetails}
@@ -1380,7 +1572,6 @@ export default function AdminDashboard() {
                             </div>
                           ))
                         )}
-                        <div ref={orderChatBottomRef} />
                       </div>
 
                       <div className="space-y-3">
