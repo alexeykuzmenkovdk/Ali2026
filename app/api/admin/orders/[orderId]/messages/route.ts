@@ -3,6 +3,8 @@ import { addMessage, getOrderById, listOrderMessages } from "@/lib/store"
 import { sendMessage } from "@/lib/telegram-bot"
 import { requireAdminAuth } from "@/lib/admin-auth"
 
+const DEAL_ROOM_LINK = "https://t.me/AlipayFastBot/alipayfast"
+
 export async function GET(request: Request, { params }: { params: { orderId: string } }) {
   const auth = requireAdminAuth(request)
   if (!auth.ok) {
@@ -30,7 +32,7 @@ export async function POST(request: Request, { params }: { params: { orderId: st
   if (order) {
     sendMessage({
       chat_id: order.userId,
-      text: `✉️ Оператор ответил по заявке #${params.orderId.slice(0, 6)}\n${body.text ?? ""}\n\nВернуться в комнату сделки: https://t.me/AlipayFastBot/alipayfast`,
+      text: `✉️ Оператор ответил по заявке #${params.orderId.slice(0, 6)}\n${body.text ?? ""}\n\nВернуться в комнату сделки: ${DEAL_ROOM_LINK}`,
     }).catch(() => null)
   }
 
