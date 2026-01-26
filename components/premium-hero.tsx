@@ -489,7 +489,7 @@ function PremiumCard({ exchangeRate }: PremiumCardProps) {
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Перейти в Telegram группу @ALIPAYFAST"
-          className="inline-flex"
+          className="flex w-full justify-center"
         >
           <motion.div
             className="relative mx-auto flex items-center justify-center my-2 cursor-pointer"
