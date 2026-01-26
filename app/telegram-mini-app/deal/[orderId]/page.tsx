@@ -15,8 +15,6 @@ const SCROLL_BOTTOM_THRESHOLD = 80
 const DRAFT_DEBOUNCE_MS = 400
 const READ_DEBOUNCE_MS = 1200
 
-const QUICK_REPLIES = ["Я оплатил", "Отправляю чек", "Не получается оплатить"]
-
 type OrderStatus = "CREATED" | "IN_PROGRESS" | "COMPLETED" | "CANCELED"
 
 type MessageStatus = "sending" | "sent" | "error"
@@ -794,9 +792,6 @@ export default function DealRoomPage() {
               </div>
             </div>
           </div>
-          <p className="text-sm text-slate-300">
-            Общайтесь с оператором и быстро переключайтесь между чатом и деталями сделки.
-          </p>
         </header>
 
         {!isTelegram && (
@@ -953,22 +948,6 @@ export default function DealRoomPage() {
               </div>
 
               <div className="sticky bottom-0 flex flex-col gap-2 border-t border-slate-800 bg-slate-900/90 px-3 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur">
-                <div className="flex flex-wrap gap-2">
-                  {QUICK_REPLIES.map((reply) => (
-                    <button
-                      key={reply}
-                      type="button"
-                      className="rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-200"
-                      onClick={() => {
-                        setMessageText(reply)
-                        messageInputRef.current?.focus()
-                      }}
-                      disabled={isChatReadOnly}
-                    >
-                      {reply}
-                    </button>
-                  ))}
-                </div>
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <Input
                     ref={messageInputRef}
@@ -1002,6 +981,7 @@ export default function DealRoomPage() {
                     disabled={
                       isSending || isUploading || (!messageText.trim() && !messageFile) || !initData || isChatReadOnly
                     }
+                    className="bg-orange-500 font-bold text-white hover:bg-orange-400 disabled:bg-orange-500/60"
                   >
                     {isSending || isUploading ? "Отправка..." : "Отправить"}
                   </Button>
