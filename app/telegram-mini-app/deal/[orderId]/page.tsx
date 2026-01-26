@@ -46,7 +46,8 @@ export default function DealRoomPage() {
 
   const chatContainerRef = useRef<HTMLDivElement | null>(null)
   const bottomRef = useRef<HTMLDivElement | null>(null)
-  const [isChatPinnedToBottom, setIsChatPinnedToBottom] = useState(true)
+  const [isChatPinnedToBottom, setIsChatPinnedToBottom] = useState(false)
+  const [chatScrollRatio, setChatScrollRatio] = useState(0)
 
   useEffect(() => {
     const telegramWebApp = window.Telegram?.WebApp
@@ -70,6 +71,10 @@ export default function DealRoomPage() {
   }, [])
 
   const pullOffset = useTelegramSwipeDownGuard(isTelegram)
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" })
+  }, [orderId])
 
   const fetchOrderDetails = async (currentOrderId: string, initDataHeader: string) => {
     const response = await fetch(`/api/orders/${currentOrderId}`, {
@@ -153,7 +158,16 @@ export default function DealRoomPage() {
     const threshold = 80
     const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight
     setIsChatPinnedToBottom(distanceFromBottom < threshold)
+    const maxScroll = container.scrollHeight - container.clientHeight
+    setChatScrollRatio(maxScroll > 0 ? container.scrollTop / maxScroll : 0)
   }
+
+  useEffect(() => {
+    const container = chatContainerRef.current
+    if (!container) return
+    const maxScroll = container.scrollHeight - container.clientHeight
+    setChatScrollRatio(maxScroll > 0 ? container.scrollTop / maxScroll : 0)
+  }, [messages])
 
   useEffect(() => {
     if (!isChatPinnedToBottom) return
@@ -273,22 +287,6 @@ export default function DealRoomPage() {
             <h1 className="text-3xl font-semibold">P2P-сделка открыта</h1>
             <p className="text-slate-300">Общайтесь с админом и отслеживайте статус заявки в реальном времени.</p>
           </div>
-          <div className="grid gap-3 text-sm sm:grid-cols-3">
-            <div className="rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3">
-              <div className="text-slate-400">Статус</div>
-              <div className="text-lg font-semibold text-emerald-300">
-                {order ? statusLabel(order.status) : "Загрузка"}
-              </div>
-            </div>
-            <div className="rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3">
-              <div className="text-slate-400">Номер заявки</div>
-              <div className="text-lg font-semibold text-white">{order ? `#${order.id.slice(0, 6)}` : "—"}</div>
-            </div>
-            <div className="rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3">
-              <div className="text-slate-400">Чат</div>
-              <div className="text-lg font-semibold text-white">С админом</div>
-            </div>
-          </div>
         </div>
 
         {!isTelegram && (
@@ -307,7 +305,7 @@ export default function DealRoomPage() {
 
         <Card className="border-slate-800 bg-slate-900/60">
           <CardHeader>
-            <CardTitle className="text-lg">Детали сделки</CardTitle>
+            <CardTitle className="text-lg text-orange-400">Детали сделки</CardTitle>
             <CardDescription className="text-slate-400">
               {order ? `Заявка #${order.id.slice(0, 6)} • статус: ${statusLabel(order.status)}` : "Загрузка данных"}
             </CardDescription>
@@ -330,89 +328,98 @@ export default function DealRoomPage() {
 
         <Card className="flex flex-1 flex-col border-slate-800 bg-slate-900/60">
           <CardHeader>
-            <CardTitle className="text-lg">Чат сделки</CardTitle>
+            <CardTitle className="text-lg text-orange-400">Чат сделки</CardTitle>
             <CardDescription className="text-slate-400">
               Сообщения синхронизируются с админ-панелью, оператор видит вашу заявку.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-1 flex-col gap-4">
-            <div
-              ref={chatContainerRef}
-              onScroll={handleChatScroll}
-              className="flex-1 min-h-[50vh] max-h-[70vh] space-y-4 overflow-y-auto rounded-lg border border-slate-800 bg-slate-950 p-4 text-base leading-relaxed sm:min-h-[55vh] lg:min-h-[60vh]"
-            >
-              {isLoading ? (
-                <div className="text-slate-400">Загрузка сообщений...</div>
-              ) : messages.length === 0 ? (
-                <div className="text-slate-400">Сообщений пока нет. Напишите администратору первым.</div>
-              ) : (
-                messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.senderRole === "client" ? "justify-end" : "justify-start"}`}
-                  >
+            <div className="relative">
+              <div
+                ref={chatContainerRef}
+                onScroll={handleChatScroll}
+                className="flex-1 min-h-[50vh] max-h-[70vh] space-y-4 overflow-y-scroll rounded-lg border border-slate-800 bg-slate-950 p-4 pr-6 text-base leading-relaxed sm:min-h-[55vh] lg:min-h-[60vh]"
+                style={{ scrollbarWidth: "thin", scrollbarColor: "#f97316 #0f172a" }}
+              >
+                {isLoading ? (
+                  <div className="text-slate-400">Загрузка сообщений...</div>
+                ) : messages.length === 0 ? (
+                  <div className="text-slate-400">Сообщений пока нет. Напишите администратору первым.</div>
+                ) : (
+                  messages.map((message) => (
                     <div
-                      className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                        message.senderRole === "client"
-                          ? "bg-emerald-500/20 text-emerald-100"
-                          : "bg-slate-800 text-slate-100"
-                      }`}
+                      key={message.id}
+                      className={`flex ${message.senderRole === "client" ? "justify-end" : "justify-start"}`}
                     >
-                      {message.text && renderMessageText(message.text)}
-                      {message.fileUrl && (
-                        <div className="mt-2 space-y-2">
-                          {resolveFileType(message.fileUrl) === "image" ? (
-                            <button
-                              type="button"
-                              onClick={() => openMediaPreview(message.fileUrl ?? "")}
-                              className="block"
-                            >
-                              <img
-                                src={message.fileUrl}
-                                alt="Вложение"
-                                className="max-h-48 rounded-md border transition hover:opacity-90"
-                              />
-                            </button>
-                          ) : resolveFileType(message.fileUrl) === "video" ? (
-                            <video src={message.fileUrl} controls className="max-h-48 w-full rounded-md border" />
-                          ) : (
-                            <a
-                              href={message.fileUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center text-emerald-200 underline"
-                            >
-                              Открыть файл
-                            </a>
-                          )}
-                          <div className="flex flex-wrap gap-3 text-xs">
-                            {(resolveFileType(message.fileUrl) === "image" ||
-                              resolveFileType(message.fileUrl) === "video") && (
+                      <div
+                        className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                          message.senderRole === "client"
+                            ? "bg-emerald-500/20 text-emerald-100"
+                            : "bg-slate-800 text-slate-100"
+                        }`}
+                      >
+                        {message.text && renderMessageText(message.text)}
+                        {message.fileUrl && (
+                          <div className="mt-2 space-y-2">
+                            {resolveFileType(message.fileUrl) === "image" ? (
                               <button
                                 type="button"
                                 onClick={() => openMediaPreview(message.fileUrl ?? "")}
-                                className="text-emerald-200 underline"
+                                className="block"
                               >
-                                Открыть
+                                <img
+                                  src={message.fileUrl}
+                                  alt="Вложение"
+                                  className="max-h-48 rounded-md border transition hover:opacity-90"
+                                />
                               </button>
+                            ) : resolveFileType(message.fileUrl) === "video" ? (
+                              <video src={message.fileUrl} controls className="max-h-48 w-full rounded-md border" />
+                            ) : (
+                              <a
+                                href={message.fileUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center text-emerald-200 underline"
+                              >
+                                Открыть файл
+                              </a>
                             )}
-                            <a href={message.fileUrl} download className="text-emerald-200 underline">
-                              Скачать
-                            </a>
+                            <div className="flex flex-wrap gap-3 text-xs">
+                              {(resolveFileType(message.fileUrl) === "image" ||
+                                resolveFileType(message.fileUrl) === "video") && (
+                                <button
+                                  type="button"
+                                  onClick={() => openMediaPreview(message.fileUrl ?? "")}
+                                  className="text-emerald-200 underline"
+                                >
+                                  Открыть
+                                </button>
+                              )}
+                              <a href={message.fileUrl} download className="text-emerald-200 underline">
+                                Скачать
+                              </a>
+                            </div>
                           </div>
+                        )}
+                        <div className="mt-1 text-[10px] text-slate-400">
+                          {new Date(message.createdAt).toLocaleString("ru-RU", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
                         </div>
-                      )}
-                      <div className="mt-1 text-[10px] text-slate-400">
-                        {new Date(message.createdAt).toLocaleString("ru-RU", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
                       </div>
                     </div>
-                  </div>
-                ))
-              )}
-              <div ref={bottomRef} />
+                  ))
+                )}
+                <div ref={bottomRef} />
+              </div>
+              <div className="pointer-events-none absolute right-2 top-3 h-[calc(100%-1.5rem)] w-1 rounded-full bg-slate-800/80">
+                <div
+                  className="w-full rounded-full bg-orange-400"
+                  style={{ height: "24%", transform: `translateY(${chatScrollRatio * 76}%)` }}
+                />
+              </div>
             </div>
 
             <div className="flex flex-col gap-2 sm:flex-row">
@@ -461,7 +468,10 @@ export default function DealRoomPage() {
                 Вернуться назад
               </button>
             </div>
-            <Button asChild variant="outline" className="mt-2 w-full border-emerald-400/60 text-emerald-100">
+            <Button
+              asChild
+              className="mt-2 h-auto w-full whitespace-normal bg-orange-500 px-4 py-3 text-sm font-semibold text-white hover:bg-orange-600"
+            >
               <a href="https://t.me/AlipayFast" target="_blank" rel="noreferrer">
                 Подписаться на Telegram канал AlipayFast, чтобы быть в курсе выгодных курсов и обновлений
               </a>
