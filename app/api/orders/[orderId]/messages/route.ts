@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { addMessage, listOrderMessages } from "@/lib/store"
 import { requireTelegramInitData } from "@/lib/telegram"
-import { sendMessage } from "@/lib/telegram-bot"
+import { getAdminChatId, sendMessage } from "@/lib/telegram-bot"
 
 export async function GET(request: Request, { params }: { params: { orderId: string } }) {
   const initData = request.headers.get("x-telegram-init-data")
@@ -54,15 +54,15 @@ export async function POST(request: Request, { params }: { params: { orderId: st
     text: clientNoticeLines.join("\n"),
   }).catch(() => null)
 
-  const adminId = process.env.ADMIN_USER_ID
-  if (adminId) {
+  const adminChatId = getAdminChatId()
+  if (adminChatId) {
     const noticeLines = [
       `✉️ Новое сообщение по заявке #${params.orderId.slice(0, 6)}`,
       body.text ?? "",
       fileLink ? `📎 Файл: ${fileLink}` : "",
     ].filter(Boolean)
     sendMessage({
-      chat_id: Number(adminId),
+      chat_id: adminChatId,
       text: noticeLines.join("\n"),
     }).catch(() => null)
   }

@@ -43,6 +43,13 @@ export async function sendPhoto(payload: SendPhotoPayload) {
   return response.json()
 }
 
+export function getAdminChatId() {
+  const adminId = process.env.ADMIN_USER_ID ?? process.env.TELEGRAM_SITE_CHAT_ID ?? process.env.TELEGRAM_CHAT_ID
+  if (!adminId) return null
+  const numericId = Number(adminId)
+  return Number.isNaN(numericId) ? null : numericId
+}
+
 export async function getFileUrl(fileId: string) {
   const token = getBotToken()
   const response = await fetch(`${apiBase}/bot${token}/getFile?file_id=${fileId}`)

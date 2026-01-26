@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { createSourcingRequest, getLastSourcingRequest } from "@/lib/store"
 import { requireTelegramInitData } from "@/lib/telegram"
-import { sendMessage, sendPhoto } from "@/lib/telegram-bot"
+import { getAdminChatId, sendMessage, sendPhoto } from "@/lib/telegram-bot"
 
 const HOURS_LIMIT = 48
 
@@ -32,8 +32,8 @@ export async function POST(request: Request) {
     priceRub: body.priceRub,
   })
 
-  const adminId = process.env.ADMIN_USER_ID
-  if (adminId) {
+  const adminChatId = getAdminChatId()
+  if (adminChatId) {
     const captionLines = [
       `🔍 Запрос #${requestItem.id.slice(0, 6)}`,
       `Описание: ${requestItem.description}`,
@@ -57,9 +57,9 @@ export async function POST(request: Request) {
 
     const photoUrl = requestItem.imageUrl
     if (photoUrl) {
-      sendPhoto({ chat_id: Number(adminId), photo: photoUrl, caption, reply_markup: replyMarkup }).catch(() => null)
+      sendPhoto({ chat_id: adminChatId, photo: photoUrl, caption, reply_markup: replyMarkup }).catch(() => null)
     } else {
-      sendMessage({ chat_id: Number(adminId), text: caption, reply_markup: replyMarkup }).catch(() => null)
+      sendMessage({ chat_id: adminChatId, text: caption, reply_markup: replyMarkup }).catch(() => null)
     }
   }
 
