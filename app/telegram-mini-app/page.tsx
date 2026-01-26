@@ -67,6 +67,12 @@ export default function TelegramMiniAppPage() {
     const telegramWebApp = window.Telegram?.WebApp
     if (telegramWebApp) {
       telegramWebApp.ready()
+      telegramWebApp.expand()
+      try {
+        telegramWebApp.requestFullscreen?.()
+      } catch (error) {
+        console.warn("Не удалось запросить fullscreen в Telegram WebApp", error)
+      }
       setIsTelegram(true)
       setInitData(telegramWebApp.initData)
       const user = telegramWebApp.initDataUnsafe?.user
