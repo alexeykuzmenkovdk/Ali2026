@@ -39,6 +39,7 @@ const nextConfig = {
   // Экспериментальные функции для оптимизации
   experimental: {
     optimizePackageImports: ['lucide-react'],
+    optimizeCss: true,
   },
 
   // PWA и мобильные оптимизации

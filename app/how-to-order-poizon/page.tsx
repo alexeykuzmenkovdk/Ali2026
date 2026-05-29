@@ -23,7 +23,7 @@ export default function HowToOrderPoizonPage() {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center">
             <div className="flex justify-center mb-6">
-              <Image src="/poizon-logo.png" alt="Логотип Poizon" width={200} height={80} className="mb-4" />
+              <Image src="/poizon-logo.webp" alt="Логотип Poizon" width={200} height={80} className="mb-4" />
             </div>
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">Как заказывать с Пойзон (Poizon)</h1>
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">

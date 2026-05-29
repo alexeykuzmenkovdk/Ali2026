@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { telegramFetch } from "@/lib/telegram-fetch"
 
 // Интерфейс для данных заявки
 interface OrderData {
@@ -44,7 +45,7 @@ async function sendTelegramMessage(message: string) {
     console.log(`[SERVER] Отправка сообщения в Telegram, chat_id: ${chatId}`)
 
     // Отправляем сообщение через Telegram Bot API
-    const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    const response = await telegramFetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

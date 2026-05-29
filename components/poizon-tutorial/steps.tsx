@@ -45,7 +45,7 @@ const steps = [
             </p>
             <div className="bg-white p-3 rounded border">
               <Image
-                src="/poizon-guide/ios-app-store-install.png"
+                src="/poizon-guide/ios-app-store-install.webp"
                 alt="Установка Poizon через App Store"
                 width={600}
                 height={400}
@@ -91,7 +91,7 @@ const steps = [
               <div className="bg-white p-3 rounded border">
                 <p className="text-xs text-gray-600 mb-2">QR-код на сайте dewu.com:</p>
                 <Image
-                  src="/poizon-guide/dewu-website-qr.png"
+                  src="/poizon-guide/dewu-website-qr.webp"
                   alt="QR-код для скачивания Poizon с сайта"
                   width={400}
                   height={300}
@@ -101,7 +101,7 @@ const steps = [
               <div className="bg-white p-3 rounded border">
                 <p className="text-xs text-gray-600 mb-2">Альтернативный QR-код:</p>
                 <Image
-                  src="/poizon-guide/android-qr-download.png"
+                  src="/poizon-guide/android-qr-download.webp"
                   alt="Альтернативный способ скачивания для Android"
                   width={400}
                   height={300}
@@ -141,7 +141,7 @@ const steps = [
             </p>
             <div className="bg-white p-3 rounded border">
               <Image
-                src="/poizon-guide/registration-start.png"
+                src="/poizon-guide/registration-start.webp"
                 alt="Начало регистрации в Poizon"
                 width={600}
                 height={400}
@@ -164,7 +164,7 @@ const steps = [
             </p>
             <div className="bg-white p-3 rounded border mb-3">
               <Image
-                src="/poizon-guide/country-selection.png"
+                src="/poizon-guide/country-selection.webp"
                 alt="Выбор страны и телефонного кода"
                 width={600}
                 height={400}
@@ -214,7 +214,7 @@ const steps = [
             </p>
             <div className="bg-white p-3 rounded border">
               <Image
-                src="/poizon-guide/sms-verification.png"
+                src="/poizon-guide/sms-verification.webp"
                 alt="Ввод SMS-кода подтверждения"
                 width={600}
                 height={400}
@@ -269,7 +269,7 @@ const steps = [
             </p>
             <div className="bg-white p-3 rounded border">
               <Image
-                src="/poizon-guide/social-network-tabs.png"
+                src="/poizon-guide/social-network-tabs.webp"
                 alt="Разделы социальной сети Poizon"
                 width={600}
                 height={300}
@@ -278,7 +278,7 @@ const steps = [
             </div>
             <div className="bg-white p-3 rounded border">
               <Image
-                src="/poizon-guide/social-to-product.png"
+                src="/poizon-guide/social-to-product.webp"
                 alt="Переход от поста к товару"
                 width={600}
                 height={300}
@@ -300,7 +300,7 @@ const steps = [
             </p>
             <div className="bg-white p-3 rounded border">
               <Image
-                src="/poizon-guide/marketplace-search.png"
+                src="/poizon-guide/marketplace-search.webp"
                 alt="Поиск и категории товаров"
                 width={600}
                 height={400}
@@ -349,7 +349,7 @@ const steps = [
             </p>
             <div className="bg-white p-3 rounded border">
               <Image
-                src="/poizon-guide/explore-services-screen.png"
+                src="/poizon-guide/explore-services-screen.webp"
                 alt="Центр услуг и идентификации"
                 width={400}
                 height={600}
@@ -378,7 +378,7 @@ const steps = [
             </p>
             <div className="bg-white p-3 rounded border">
               <Image
-                src="/poizon-guide/full-profile-screen.png"
+                src="/poizon-guide/full-profile-screen.webp"
                 alt="Полный экран профиля пользователя"
                 width={400}
                 height={600}
@@ -389,7 +389,7 @@ const steps = [
               <div className="bg-white p-3 rounded border">
                 <h5 className="font-semibold mb-2">Взаимодействие с товарами:</h5>
                 <Image
-                  src="/poizon-guide/profile-sections.png"
+                  src="/poizon-guide/profile-sections.webp"
                   alt="Разделы профиля"
                   width={400}
                   height={200}
@@ -405,7 +405,7 @@ const steps = [
               <div className="bg-white p-3 rounded border">
                 <h5 className="font-semibold mb-2">История заказов:</h5>
                 <Image
-                  src="/poizon-guide/order-statuses.png"
+                  src="/poizon-guide/order-statuses.webp"
                   alt="Статусы заказов"
                   width={400}
                   height={100}
@@ -427,7 +427,7 @@ const steps = [
           <h4 className="font-semibold text-gray-800 mb-3">Центр услуг:</h4>
           <div className="bg-white p-3 rounded border">
             <Image
-              src="/poizon-guide/interface-services-overview.png"
+              src="/poizon-guide/interface-services-overview.webp"
               alt="Обзор всех услуг"
               width={600}
               height={200}
@@ -473,7 +473,7 @@ const steps = [
             </p>
             <div className="bg-white p-3 rounded border">
               <Image
-                src="/poizon-guide/search-bar-highlighted.png"
+                src="/poizon-guide/search-bar-highlighted.webp"
                 alt="Поисковая строка выделена красной рамкой"
                 width={400}
                 height={600}
@@ -528,7 +528,7 @@ const steps = [
             </p>
             <div className="bg-white p-3 rounded border">
               <Image
-                src="/poizon-guide/search-results-nike.png"
+                src="/poizon-guide/search-results-nike.webp"
                 alt="Результаты поиска Nike с фильтрами и товарами"
                 width={400}
                 height={600}
@@ -605,7 +605,7 @@ const steps = [
             <p>При переходе в карточку товара вы увидите основную информацию и кнопки для взаимодействия с товаром.</p>
             <div className="bg-white p-3 rounded border">
               <Image
-                src="/poizon-guide/product-card-overview.png"
+                src="/poizon-guide/product-card-overview.webp"
                 alt="Карточка товара Nike Cortez с основными элементами"
                 width={600}
                 height={400}
@@ -783,7 +783,7 @@ const steps = [
             </p>
             <div className="bg-white p-3 rounded border">
               <Image
-                src="/poizon-guide/order-checkout-screen.png"
+                src="/poizon-guide/order-checkout-screen.webp"
                 alt="Экран оформления заказа с выбором размера и способа оплаты"
                 width={400}
                 height={600}
@@ -828,7 +828,7 @@ const steps = [
             <p>Выбираем способ оплаты - в нашем случае мы будем платить счетом Alipay.</p>
             <div className="bg-white p-3 rounded border">
               <Image
-                src="/poizon-guide/alipay-payment-screen.png"
+                src="/poizon-guide/alipay-payment-screen.webp"
                 alt="Экран оплаты в Alipay с выбором баланса и кнопкой Confirm"
                 width={400}
                 height={600}

@@ -1,3 +1,5 @@
+import { telegramFetch } from "@/lib/telegram-fetch"
+
 interface SendMessagePayload {
   chat_id: number
   text: string
@@ -25,7 +27,7 @@ function getBotToken() {
 
 export async function sendMessage(payload: SendMessagePayload) {
   const token = getBotToken()
-  const response = await fetch(`${apiBase}/bot${token}/sendMessage`, {
+  const response = await telegramFetch(`${apiBase}/bot${token}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -35,7 +37,7 @@ export async function sendMessage(payload: SendMessagePayload) {
 
 export async function sendPhoto(payload: SendPhotoPayload) {
   const token = getBotToken()
-  const response = await fetch(`${apiBase}/bot${token}/sendPhoto`, {
+  const response = await telegramFetch(`${apiBase}/bot${token}/sendPhoto`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -52,7 +54,7 @@ export function getAdminChatId() {
 
 export async function getFileUrl(fileId: string) {
   const token = getBotToken()
-  const response = await fetch(`${apiBase}/bot${token}/getFile?file_id=${fileId}`)
+  const response = await telegramFetch(`${apiBase}/bot${token}/getFile?file_id=${fileId}`)
   const data = await response.json()
   if (!data.ok) return null
   const filePath = data.result?.file_path
@@ -62,7 +64,7 @@ export async function getFileUrl(fileId: string) {
 
 export async function answerCallbackQuery(callbackQueryId: string, text?: string) {
   const token = getBotToken()
-  await fetch(`${apiBase}/bot${token}/answerCallbackQuery`, {
+  await telegramFetch(`${apiBase}/bot${token}/answerCallbackQuery`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ callback_query_id: callbackQueryId, text }),

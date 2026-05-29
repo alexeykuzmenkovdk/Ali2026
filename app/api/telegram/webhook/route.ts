@@ -58,6 +58,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true })
   }
 
+  // Обработка /start для всех пользователей
+  if (message?.text === "/start") {
+    const userId = message.from?.id
+    if (userId) {
+      await sendMessage({
+        chat_id: userId,
+        text: `👋 Добро пожаловать в AlipayFast!\n\n💴 Пополнение Alipay из России по выгодному курсу.\n\n🚀 Открыть приложение: https://t.me/AlipayFastBot/alipayfast`,
+        parse_mode: "Markdown",
+      })
+    }
+    return NextResponse.json({ ok: true })
+  }
+
   if (!message || !adminId || message.from?.id !== adminId) {
     return NextResponse.json({ ok: true })
   }

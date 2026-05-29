@@ -135,7 +135,7 @@ export function PremiumHero({ exchangeRate = 12.5 }: PremiumHeroProps) {
               className="mb-4 w-full max-w-[220px] md:max-w-[250px]"
             >
               <CriticalImage
-                src="/images/alipaifest.png"
+                src="/images/alipaifest.webp"
                 alt="AlipayFast Logo"
                 width={250}
                 height={140}
@@ -504,7 +504,7 @@ function PremiumCard({ exchangeRate }: PremiumCardProps) {
           >
             <div className="relative w-48 overflow-hidden rounded-lg bg-white p-1 shadow-lg">
               <CriticalImage
-                src="/telegram-qr.png"
+                src="/telegram-qr.webp"
                 alt="Telegram QR код @ALIPAYFAST"
                 width={200}
                 height={220}
